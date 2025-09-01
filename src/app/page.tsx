@@ -145,7 +145,7 @@ export default function AuditForm() {
         <RadioGroupField
           label="Do you experience delays, errors, or confusion in handoffs between departments or team members?"
           value={formData.handoffIssues}
-          onChange={(value) => handleInputChange('handoffIssues', value as FormData['handoffIssues']))
+          onChange={(value) => handleInputChange('handoffIssues', value as FormData['handoffIssues'])}
           options={[
             { value: 'frequently', label: 'Frequently' },
             { value: 'occasionally', label: 'Occasionally' },
