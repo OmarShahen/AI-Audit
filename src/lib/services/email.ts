@@ -15,7 +15,7 @@ export interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions) {
   try {
-    const emailData: any = {
+    const emailData: {from: string; to: string; subject: string; html: string; attachments?: Array<{filename: string; content: Buffer; contentType: string}>} = {
       from: process.env.FROM_EMAIL || 'noreply@audit.com',
       to: options.to,
       subject: options.subject,

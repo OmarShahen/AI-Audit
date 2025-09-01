@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-export function handleApiError(error: any) {
+export function handleApiError(error: unknown) {
   console.error(error);
 
   // Handle Zod validation errors

@@ -3,8 +3,7 @@ import { auditAPI } from '@/lib/api/audit';
 import type { 
   FormWithCategories, 
   CategoryWithQuestions,
-  Submission,
-  Answer 
+  Submission
 } from '@/lib/api/types';
 
 // Custom hook for managing audit session state
@@ -23,8 +22,8 @@ export function useAuditSession() {
     try {
       const form = await auditAPI.getAuditForm(formId);
       setAuditForm(form);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load audit form');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load audit form');
     } finally {
       setIsLoading(false);
     }
@@ -41,8 +40,8 @@ export function useAuditSession() {
       });
       setCurrentSubmission(submission);
       return submission;
-    } catch (err: any) {
-      setError(err.message || 'Failed to start submission');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to start submission');
       return null;
     } finally {
       setIsLoading(false);
@@ -65,8 +64,8 @@ export function useAuditSession() {
         ...prev,
         [questionId]: value
       }));
-    } catch (err: any) {
-      setError(err.message || 'Failed to save answer');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save answer');
     }
   }, [currentSubmission]);
 
@@ -100,8 +99,8 @@ export function useAuditSession() {
     try {
       const report = await auditAPI.completeSubmission(currentSubmission.id);
       return report;
-    } catch (err: any) {
-      setError(err.message || 'Failed to complete audit');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to complete audit');
       return null;
     } finally {
       setIsLoading(false);
@@ -160,8 +159,8 @@ export function useQuestionCategories(formId: number = 1) {
       try {
         const data = await auditAPI.getQuestionCategories(formId);
         setCategories(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load categories');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load categories');
       } finally {
         setIsLoading(false);
       }

@@ -21,13 +21,12 @@ export async function GET(request: NextRequest) {
       questionId,
       conditionQuestionId,
       showQuestion,
-      sortBy,
       sortOrder,
     } = validatedQuery;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (questionId) {
       whereConditions.push(eq(questionConditionals.questionId, questionId));

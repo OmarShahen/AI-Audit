@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = formQuerySchema.parse(queryParams);
 
-    const { page, limit, search, sortBy, sortOrder } = validatedQuery;
+    const { page, limit, search, sortOrder } = validatedQuery;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (search) {
       whereConditions.push(ilike(forms.title, `%${search}%`));

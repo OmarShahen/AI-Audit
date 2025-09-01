@@ -113,6 +113,6 @@ export interface FormWithCategories extends Form {
 export interface AuditSession {
   email: string;
   currentCategoryId: number;
-  formData: Record<string, any>;
+  formData: Record<string, unknown>;
   startedAt: Date;
 }

@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 
 // Create a DOM purifier instance for server-side use
 const window = new JSDOM('').window;
-const purify = DOMPurify(window as any);
+const purify = DOMPurify(window as unknown as Window & typeof globalThis);
 
 // Configure marked options for better PDF output
 const markedOptions = {

@@ -106,7 +106,7 @@ export default function AuditForm() {
       <RadioGroupField
         label="Are your key business processes formally documented?"
         value={formData.processDocumentation}
-        onChange={(value) => handleInputChange('processDocumentation', value as any)}
+        onChange={(value) => handleInputChange('processDocumentation', value as FormData['processDocumentation'])}
         options={[
           { value: 'fully_documented', label: 'Fully documented and accessible' },
           { value: 'partially_documented', label: 'Partially documented' },
@@ -119,7 +119,7 @@ export default function AuditForm() {
       <RadioGroupField
         label="Are processes typically standardized across the organization?"
         value={formData.processStandardization}
-        onChange={(value) => handleInputChange('processStandardization', value as any)}
+        onChange={(value) => handleInputChange('processStandardization', value as FormData['processStandardization'])}
         options={[
           { value: 'highly_standardized', label: 'Highly standardized' },
           { value: 'somewhat_standardized', label: 'Somewhat standardized' },
@@ -132,7 +132,7 @@ export default function AuditForm() {
       <RadioGroupField
         label="How are approvals and sign-offs typically managed?"
         value={formData.approvalsManagement}
-        onChange={(value) => handleInputChange('approvalsManagement', value as any)}
+        onChange={(value) => handleInputChange('approvalsManagement', value as FormData['approvalsManagement'])}
         options={[
           { value: 'automated_workflows', label: 'Automated workflows' },
           { value: 'email_chat', label: 'Via email or chat (manual)' },
@@ -145,7 +145,7 @@ export default function AuditForm() {
         <RadioGroupField
           label="Do you experience delays, errors, or confusion in handoffs between departments or team members?"
           value={formData.handoffIssues}
-          onChange={(value) => handleInputChange('handoffIssues', value as any)}
+          onChange={(value) => handleInputChange('handoffIssues', value as FormData['handoffIssues']))
           options={[
             { value: 'frequently', label: 'Frequently' },
             { value: 'occasionally', label: 'Occasionally' },

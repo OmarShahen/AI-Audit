@@ -5,7 +5,7 @@ import {
   createCompanySchema,
   companyQuerySchema,
 } from "@/lib/validations/company";
-import { eq, ilike, and, or, asc, desc } from "drizzle-orm";
+import { eq, ilike, and, asc, desc } from "drizzle-orm";
 import { handleApiError } from "@/lib/errors/error-handler";
 
 export async function GET(request: NextRequest) {
@@ -15,12 +15,12 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = companyQuerySchema.parse(queryParams);
 
-    const { page, limit, industry, size, search, sortBy, sortOrder } =
+    const { page, limit, industry, size, search, sortOrder } =
       validatedQuery;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (industry) {
       whereConditions.push(eq(companies.industry, industry));

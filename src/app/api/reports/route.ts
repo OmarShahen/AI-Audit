@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = reportQuerySchema.parse(queryParams);
 
-    const { page, limit, submissionId, search, sortBy, sortOrder } = validatedQuery;
+    const { page, limit, submissionId, search, sortOrder } = validatedQuery;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (submissionId) {
       whereConditions.push(eq(reports.submissionId, submissionId));

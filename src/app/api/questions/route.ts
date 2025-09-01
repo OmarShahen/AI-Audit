@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = questionQuerySchema.parse(queryParams);
 
-    const { page, limit, categoryId, type, required, search, sortBy, sortOrder } = validatedQuery;
+    const { page, limit, categoryId, type, required, search, sortOrder } = validatedQuery;
 
     const offset = (page - 1) * limit;
 
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (categoryId) {
       whereConditions.push(eq(questions.categoryId, categoryId));
