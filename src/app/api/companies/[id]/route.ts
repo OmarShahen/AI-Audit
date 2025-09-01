@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { companies } from "@/lib/db/schema";
+import { companies, forms } from "@/lib/db/schema";
 import {
   updateCompanySchema,
   companyParamsSchema,
@@ -52,16 +52,32 @@ export async function PUT(
       .limit(1);
 
     if (!existingCompany) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "COMPANY_NOT_FOUND",
-            message: `Company with ID ${id} not found`,
-          },
-        },
-        { status: 404 }
-      );
+      throw new Error("company not registered");
+    }
+
+    if (validatedData.name && validatedData.name != existingCompany.name) {
+      const [existingCompanyName] = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.name, validatedData.name))
+        .limit(1);
+      if (existingCompanyName) {
+        throw new Error("Company name already registered");
+      }
+    }
+
+    if (
+      validatedData.formId &&
+      validatedData.formId != existingCompany.formId
+    ) {
+      const [form] = await db
+        .select()
+        .from(forms)
+        .where(eq(forms.id, validatedData.formId))
+        .limit(1);
+      if (!form) {
+        throw new Error("Form not found");
+      }
     }
 
     // Update company
@@ -96,16 +112,7 @@ export async function DELETE(
       .limit(1);
 
     if (!existingCompany) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "COMPANY_NOT_FOUND",
-            message: `Company with ID ${id} not found`,
-          },
-        },
-        { status: 404 }
-      );
+      throw new Error("company not found");
     }
 
     // Delete company

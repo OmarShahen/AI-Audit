@@ -1,31 +1,31 @@
 import { z } from "zod";
 
-export const industrySchema = z.enum([
-  "technology",
-  "healthcare",
-  "finance",
-  "education",
-  "manufacturing",
-  "retail",
-  "hospitality",
-  "construction",
-  "real_estate",
-  "transportation",
-  "logistics",
-  "agriculture",
-  "media",
-  "professional_services",
-  "non_profit",
-  "other",
-]);
+export const industrySchema = z.enum(
+  [
+    "technology",
+    "healthcare",
+    "finance",
+    "education",
+    "manufacturing",
+    "retail",
+    "hospitality",
+    "construction",
+    "real_estate",
+    "transportation",
+    "logistics",
+    "agriculture",
+    "media",
+    "professional_services",
+    "non_profit",
+    "other",
+  ],
+  { error: "industry value is invalid" }
+);
 
-export const companySizeSchema = z.enum([
-  "startup",
-  "small",
-  "medium",
-  "large",
-  "enterprise",
-]);
+export const companySizeSchema = z.enum(
+  ["startup", "small", "medium", "large", "enterprise"],
+  { error: "size value is invalid" }
+);
 
 export const createCompanySchema = z.object({
   name: z
@@ -33,12 +33,10 @@ export const createCompanySchema = z.object({
     .min(1, "Company name is required")
     .max(255, "Company name must be less than 255 characters")
     .trim(),
-  industry: industrySchema.refine((val) => val !== undefined, {
-    message: "Industry is required"
-  }),
-  size: companySizeSchema.refine((val) => val !== undefined, {
-    message: "Company size is required"
-  }),
+  formId: z.number("invalid form ID value"),
+  industry: industrySchema,
+  size: companySizeSchema,
+  imageURL: z.string("Company image is required").url("Invalid image URL"),
 });
 
 export const updateCompanySchema = z.object({
@@ -48,8 +46,13 @@ export const updateCompanySchema = z.object({
     .max(255, "Company name must be less than 255 characters")
     .trim()
     .optional(),
+  formId: z.number("invalid form ID value").optional(),
   industry: industrySchema.optional(),
   size: companySizeSchema.optional(),
+  imageURL: z
+    .string("Company image is required")
+    .url("Invalid image URL")
+    .optional(),
 });
 
 export const companyParamsSchema = z.object({

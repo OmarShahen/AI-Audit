@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { companies } from "@/lib/db/schema";
+import { companies, forms } from "@/lib/db/schema";
 import {
   createCompanySchema,
   companyQuerySchema,
@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = companyQuerySchema.parse(queryParams);
 
-    const { page, limit, industry, size, search, sortOrder } =
-      validatedQuery;
+    const { page, limit, industry, size, search, sortOrder } = validatedQuery;
 
     const offset = (page - 1) * limit;
 
@@ -47,6 +46,7 @@ export async function GET(request: NextRequest) {
         .select()
         .from(companies)
         .where(whereClause)
+        .leftJoin(forms, eq(companies.formId, forms.id))
         .orderBy(orderByClause)
         .limit(limit)
         .offset(offset),
@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        companies: companyList,
         pagination: {
           page,
           limit,
@@ -69,6 +68,7 @@ export async function GET(request: NextRequest) {
           hasNext: page < totalPages,
           hasPrev: page > 1,
         },
+        companies: companyList,
       },
     });
   } catch (error) {
@@ -81,6 +81,25 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createCompanySchema.parse(body);
+
+    const { name } = validatedData;
+
+    const [company, form] = await Promise.all([
+      db.query.companies.findFirst({
+        where: eq(companies.name, name),
+      }),
+      db.query.forms.findFirst({
+        where: eq(forms.id, validatedData.formId),
+      }),
+    ]);
+
+    if (company) {
+      throw new Error("Company name already registered");
+    }
+
+    if (!form) {
+      throw new Error("Form not found");
+    }
 
     const [newCompany] = await db
       .insert(companies)

@@ -46,9 +46,11 @@ export const questionTypeEnum = pgEnum("question_type", [
 
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
+  formId: integer("form_id").references(() => forms.id),
+  name: varchar("name", { length: 255 }).unique().notNull(),
   industry: industryEnum("industry").notNull(),
   size: companySizeEnum("size").notNull(),
+  imageURL: varchar("image_url").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
