@@ -10,10 +10,10 @@ import { handleApiError } from "@/lib/errors/error-handler";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = reportParamsSchema.parse(params);
+    const { id } = reportParamsSchema.parse(await params);
 
     const [report] = await db
       .select()
@@ -37,10 +37,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = reportParamsSchema.parse(params);
+    const { id } = reportParamsSchema.parse(await params);
     const body = await request.json();
     const validatedData = updateReportSchema.parse(body);
 
@@ -74,10 +74,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = reportParamsSchema.parse(params);
+    const { id } = reportParamsSchema.parse(await params);
 
     // Check if report exists
     const [existingReport] = await db
