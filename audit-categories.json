@@ -1,0 +1,409 @@
+{
+  "auditCategories": [
+    {
+      "id": 1,
+      "title": "Business Overview & Primary Challenges",
+      "questions": [
+        {
+          "id": "1-1",
+          "type": "textarea",
+          "question": "Briefly describe your core business model and services.",
+          "placeholder": "What do you do, who are your clients, and how do you deliver value?",
+          "required": true
+        },
+        {
+          "id": "1-2", 
+          "type": "textarea",
+          "question": "Where would you say your business is today?",
+          "placeholder": "Startup, growing steadily, preparing to scale, or something else?",
+          "required": true
+        },
+        {
+          "id": "1-3",
+          "type": "structured-text",
+          "question": "List your top three biggest workflow or operations challenges right now.",
+          "format": "1- Challenge:------- Costs us: [Time/money/customers/others]\n2- Challenge:------- Costs us: [Time/money/customers/others]\n3- Challenge:------- Costs us: [Time/money/customers/others]",
+          "hasAddMore": true,
+          "required": true
+        },
+        {
+          "id": "1-4",
+          "type": "textarea", 
+          "question": "What are your top 2–3 strategic goals for the next 12 months?",
+          "placeholder": "This could include revenue, client volume, hiring, expanding services, etc.",
+          "required": true
+        },
+        {
+          "id": "1-5",
+          "type": "textarea",
+          "question": "If everything went right this year, how would success look or feel?",
+          "placeholder": "Open-ended, emotion-oriented — gives us narrative insight.",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Systems & Tools Overview", 
+      "questions": [
+        {
+          "id": "2-1",
+          "type": "textarea",
+          "question": "Which software systems or tools does your business currently use regularly?",
+          "placeholder": "Examples: CRM, ERP, project management, spreadsheets, accounting tools, etc.",
+          "required": true
+        },
+        {
+          "id": "2-2",
+          "type": "radio",
+          "question": "Are there tasks or processes where you frequently enter the same data into multiple systems?",
+          "options": [
+            {"value": "yes_often", "label": "Yes, often"},
+            {"value": "occasionally", "label": "Occasionally"}, 
+            {"value": "rarely_never", "label": "Rarely or never"}
+          ],
+          "conditional": {
+            "showWhen": ["yes_often", "occasionally"],
+            "question": "Tell us more about how and where you use them.",
+            "type": "textarea"
+          }
+        },
+        {
+          "id": "2-3",
+          "type": "radio",
+          "question": "Do you rely heavily on Excel or other spreadsheets for any critical business processes?",
+          "options": [
+            {"value": "yes_extensively", "label": "Yes, extensively"},
+            {"value": "yes_partially", "label": "Yes, partially"},
+            {"value": "no_dedicated", "label": "No, we have dedicated systems"}
+          ],
+          "conditional": {
+            "showWhen": ["yes_extensively", "yes_partially"],
+            "question": "Tell us more about how and where you use them.",
+            "type": "textarea"
+          }
+        },
+        {
+          "id": "2-4",
+          "type": "radio",
+          "question": "Do your software tools share data with each other?",
+          "options": [
+            {"value": "fully_integrated", "label": "Fully integrated"},
+            {"value": "partially_integrated", "label": "Partially integrated"},
+            {"value": "not_integrated", "label": "Not integrated at all"}
+          ],
+          "conditional": {
+            "showWhen": ["fully_integrated", "partially_integrated"],
+            "question": "Tell us more about which tools are connected and how.",
+            "type": "textarea"
+          },
+          "alternateConditional": {
+            "showWhen": ["not_integrated"],
+            "question": "What data do you wish moved automatically between tools? (e.g., customer info from CRM to invoicing)",
+            "type": "textarea"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Process & Workflow Maturity",
+      "questions": [
+        {
+          "id": "3-1",
+          "type": "radio",
+          "question": "Are your key business processes written down somewhere?",
+          "options": [
+            {"value": "fully_documented", "label": "Fully documented and accessible"},
+            {"value": "partially_documented", "label": "Partially documented"},
+            {"value": "not_documented", "label": "Not documented"}
+          ]
+        },
+        {
+          "id": "3-2", 
+          "type": "radio",
+          "question": "Are processes typically standardized across the organization?",
+          "options": [
+            {"value": "highly_standardized", "label": "Highly standardized"},
+            {"value": "somewhat_standardized", "label": "Somewhat standardized"},
+            {"value": "mostly_individualized", "label": "Mostly individualized"}
+          ]
+        },
+        {
+          "id": "3-3",
+          "type": "radio", 
+          "question": "How are approvals and sign-offs typically managed?",
+          "options": [
+            {"value": "automated_workflows", "label": "Automated workflows"},
+            {"value": "email_chat", "label": "Via email or chat (manual)"},
+            {"value": "verbal_inperson", "label": "Verbally or in-person (manual)"}
+          ]
+        },
+        {
+          "id": "3-4",
+          "type": "radio",
+          "question": "Do you experience delays, errors, or confusion in handoffs between departments or team members?",
+          "options": [
+            {"value": "frequently", "label": "Frequently"},
+            {"value": "occasionally", "label": "Occasionally"},
+            {"value": "rarely_never", "label": "Rarely or never"}
+          ],
+          "conditional": {
+            "showWhen": ["frequently", "occasionally"],
+            "question": "Please describe where these issues happen.",
+            "type": "textarea"
+          }
+        },
+        {
+          "id": "3-5",
+          "type": "radio",
+          "question": "How often do these delays impact customers?",
+          "dependsOn": "3-4",
+          "showWhen": ["frequently", "occasionally"],
+          "options": [
+            {"value": "daily", "label": "Daily"},
+            {"value": "weekly", "label": "Weekly"},
+            {"value": "monthly", "label": "Monthly"},
+            {"value": "rarely_affects", "label": "Rarely affects customers"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Data Management & Accessibility",
+      "questions": [
+        {
+          "id": "4-1",
+          "type": "radio",
+          "question": "How would you describe the quality and accuracy of your business data?",
+          "options": [
+            {"value": "clean_consistent", "label": "Clean, consistent, and reliable"},
+            {"value": "moderate_inconsistencies", "label": "Moderate inconsistencies"},
+            {"value": "many_inaccuracies", "label": "Many inaccuracies or missing data"}
+          ]
+        },
+        {
+          "id": "4-2",
+          "type": "radio",
+          "question": "Where is your data stored?",
+          "options": [
+            {"value": "centralized_database", "label": "Centralized in a database or ERP"},
+            {"value": "multiple_connected", "label": "In multiple systems but somewhat connected"},
+            {"value": "disconnected_systems", "label": "In disconnected spreadsheets or isolated systems"}
+          ]
+        },
+        {
+          "id": "4-3",
+          "type": "radio",
+          "question": "Do you have real-time access to critical business reports and analytics?",
+          "options": [
+            {"value": "fully_automated", "label": "Yes, fully automated"},
+            {"value": "partially_automated", "label": "Partially automated"},
+            {"value": "manual_reports", "label": "Reports are created manually"}
+          ],
+          "conditional": {
+            "showWhen": ["fully_automated", "partially_automated"],
+            "question": "What are the generated reports and what other reports you would like to generate?",
+            "type": "textarea"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Automation Potential",
+      "questions": [
+        {
+          "id": "5-1",
+          "type": "checkbox",
+          "question": "Which types of tasks are currently repetitive or done manually? (Select all that apply)",
+          "options": [
+            {"value": "data_entry", "label": "Data entry & updates"},
+            {"value": "customer_communications", "label": "Customer communications (emails, notifications)"},
+            {"value": "reporting", "label": "Reporting & document generation"},
+            {"value": "scheduling", "label": "Scheduling & reminders"},
+            {"value": "approvals", "label": "Approvals & authorizations"},
+            {"value": "other", "label": "Other: (Please specify)"}
+          ]
+        },
+        {
+          "id": "5-2",
+          "type": "radio",
+          "question": "Roughly how many hours per week do these repetitive tasks take?",
+          "options": [
+            {"value": "less_5", "label": "Less than 5 hours"},
+            {"value": "5_15", "label": "5-15 hours"},
+            {"value": "15_30", "label": "15-30 hours"},
+            {"value": "more_30", "label": "More than 30 hours"}
+          ]
+        },
+        {
+          "id": "5-3",
+          "type": "textarea",
+          "question": "Which area of your business do you think would benefit most from automation?",
+          "required": true
+        },
+        {
+          "id": "5-4",
+          "type": "radio",
+          "question": "Are there specific processes prone to human errors?",
+          "options": [
+            {"value": "frequently", "label": "Frequently"},
+            {"value": "occasionally", "label": "Occasionally"},
+            {"value": "rarely_never", "label": "Rarely or never"}
+          ],
+          "conditional": {
+            "showWhen": ["frequently", "occasionally"],
+            "question": "Tell us more about those processes.",
+            "type": "textarea"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "AI Readiness & Opportunities",
+      "questions": [
+        {
+          "id": "6-1",
+          "type": "checkbox",
+          "question": "Which of these AI capabilities interest you? (Check any that apply)",
+          "options": [
+            {"value": "chatbot_24_7", "label": "Chatbot that answers customer questions 24/7"},
+            {"value": "demand_predictions", "label": "Predictions about busy periods or demand"},
+            {"value": "auto_documents", "label": "Automatic creation of quotes, proposals, or reports"},
+            {"value": "pattern_analysis", "label": "Analysis of patterns in your business data"},
+            {"value": "smart_scheduling", "label": "Smart scheduling that considers multiple factors"},
+            {"value": "quality_checks", "label": "Quality checks using photos or video"},
+            {"value": "other", "label": "Other: _______"},
+            {"value": "not_sure", "label": "Not sure - need to learn more"}
+          ]
+        },
+        {
+          "id": "6-2",
+          "type": "textarea",
+          "question": "If you had a smart assistant for your business, what would you want it to do?",
+          "required": true
+        },
+        {
+          "id": "6-3",
+          "type": "radio",
+          "question": "What's your biggest concern about using AI in your business?",
+          "options": [
+            {"value": "too_expensive", "label": "Too expensive"},
+            {"value": "too_complicated", "label": "Too complicated"},
+            {"value": "lose_personal_touch", "label": "Might lose personal touch"},
+            {"value": "data_security", "label": "Data security worries"},
+            {"value": "not_sure_help", "label": "Not sure it would actually help"},
+            {"value": "no_concerns", "label": "No major concerns"},
+            {"value": "other", "label": "Other: _______"}
+          ]
+        },
+        {
+          "id": "6-4",
+          "type": "textarea",
+          "question": "Have you previously tried using AI tools in your business? If yes, what were the results or challenges?",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Scalability & Infrastructure",
+      "questions": [
+        {
+          "id": "7-1",
+          "type": "radio",
+          "question": "Can your current tools and systems support your business if it grows or becomes more complex?",
+          "options": [
+            {"value": "yes_comfortably", "label": "Yes, comfortably"},
+            {"value": "some_limitations", "label": "With some limitations"},
+            {"value": "scalability_concern", "label": "No, scalability is a concern"}
+          ]
+        },
+        {
+          "id": "7-2",
+          "type": "radio",
+          "question": "Do you currently use any custom-developed software or internal tools?",
+          "options": [
+            {"value": "yes_extensively", "label": "Yes, extensively"},
+            {"value": "some_limited", "label": "Some, but limited"},
+            {"value": "no_off_shelf", "label": "No, we rely on off-the-shelf tools"}
+          ]
+        },
+        {
+          "id": "7-3",
+          "type": "radio",
+          "question": "Would your business benefit from custom-built internal tools or apps tailored to your operations?",
+          "options": [
+            {"value": "definitely", "label": "Definitely"},
+            {"value": "possibly", "label": "Possibly"},
+            {"value": "not_needed", "label": "Not needed"}
+          ],
+          "conditional": {
+            "showWhen": ["definitely", "possibly"],
+            "question": "Please explain how or where.",
+            "type": "textarea"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "General Readiness & Strategic Vision",
+      "questions": [
+        {
+          "id": "8-1",
+          "type": "radio",
+          "question": "Do you currently have a technology roadmap or strategic tech plan?",
+          "options": [
+            {"value": "yes_defined", "label": "Yes, clearly defined and documented"},
+            {"value": "in_progress", "label": "In progress or informal"},
+            {"value": "no_roadmap", "label": "No roadmap at the moment"}
+          ]
+        },
+        {
+          "id": "8-2",
+          "type": "textarea",
+          "question": "If you could resolve one business inefficiency today, what would it be?",
+          "required": true
+        },
+        {
+          "id": "8-3",
+          "type": "radio",
+          "question": "When do you need to see improvements?",
+          "options": [
+            {"value": "asap", "label": "ASAP - losing money/customers now"},
+            {"value": "3_6_months", "label": "Next 3-6 months - planning ahead"},
+            {"value": "exploring", "label": "Exploring options for future"},
+            {"value": "curious", "label": "Just curious what's possible"}
+          ]
+        },
+        {
+          "id": "8-4",
+          "type": "radio",
+          "question": "What would justify investment in new technology?",
+          "options": [
+            {"value": "6_months", "label": "Must pay back in under 6 months"},
+            {"value": "12_months", "label": "Must pay back in under 12 months"},
+            {"value": "solve_pain", "label": "Worth it if it solves major pain"},
+            {"value": "competitive_advantage", "label": "Looking for competitive advantage"}
+          ]
+        },
+        {
+          "id": "8-5",
+          "type": "radio",
+          "question": "Who else would be involved in this decision?",
+          "options": [
+            {"value": "just_me", "label": "Just me"},
+            {"value": "business_partners", "label": "My business partner(s)"},
+            {"value": "cfo_advisor", "label": "Our CFO/financial advisor"},
+            {"value": "it_consultant", "label": "Our IT person/consultant"},
+            {"value": "other", "label": "Other: ___"}
+          ]
+        }
+      ]
+    }
+  ]
+}
