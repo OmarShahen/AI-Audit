@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { questionCategories } from "@/lib/db/schema";
+import { forms, questionCategories } from "@/lib/db/schema";
 import {
   createQuestionCategorySchema,
   questionCategoryQuerySchema,
@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        questionCategories: categoriesList,
         pagination: {
           page,
           limit,
@@ -67,6 +66,7 @@ export async function GET(request: NextRequest) {
           hasNext: page < totalPages,
           hasPrev: page > 1,
         },
+        questionCategories: categoriesList,
       },
     });
   } catch (error) {
@@ -79,6 +79,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createQuestionCategorySchema.parse(body);
+
+    const form = await db.query.forms.findFirst({
+      where: eq(forms.id, validatedData.formId),
+    });
+
+    if (!form) {
+      throw new Error("Form not found");
+    }
 
     const [newCategory] = await db
       .insert(questionCategories)

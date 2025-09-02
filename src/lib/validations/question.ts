@@ -1,11 +1,9 @@
 import { z } from "zod";
 
-export const questionTypeSchema = z.enum([
-  "text",
-  "multiple_choice",
-  "checkbox",
-  "conditional",
-]);
+export const questionTypeSchema = z.enum(
+  ["text", "multiple_choice", "checkbox", "conditional"],
+  { error: "Invalid question type value" }
+);
 
 export const createQuestionSchema = z.object({
   categoryId: z
@@ -16,12 +14,8 @@ export const createQuestionSchema = z.object({
     .string("Question text is required")
     .min(1, "Question text is required")
     .trim(),
-  type: questionTypeSchema.refine((val) => val !== undefined, {
-    message: "Question type is required"
-  }),
-  required: z
-    .boolean("Required field must be a boolean")
-    .default(false),
+  type: questionTypeSchema,
+  required: z.boolean("Required field must be a boolean").default(true),
   order: z
     .number("Order must be a number")
     .int("Order must be an integer")
@@ -30,11 +24,6 @@ export const createQuestionSchema = z.object({
 });
 
 export const updateQuestionSchema = z.object({
-  categoryId: z
-    .number("Category ID must be a number")
-    .int("Category ID must be an integer")
-    .positive("Category ID must be a positive integer")
-    .optional(),
   text: z
     .string("Question text must be a string")
     .min(1, "Question text is required")
@@ -89,9 +78,7 @@ export const questionQuerySchema = z.object({
     .string("Search term must be a string")
     .max(255, "Search term must be less than 255 characters")
     .optional(),
-  sortBy: z
-    .enum(["text", "createdAt", "order", "type"])
-    .default("createdAt"),
+  sortBy: z.enum(["text", "createdAt", "order", "type"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 

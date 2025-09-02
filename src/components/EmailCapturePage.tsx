@@ -4,9 +4,11 @@ import { useState } from 'react';
 
 interface EmailCapturePageProps {
   onEmailSubmit: (email: string) => void;
+  companyName?: string;
+  companyLogo?: string;
 }
 
-export default function EmailCapturePage({ onEmailSubmit }: EmailCapturePageProps) {
+export default function EmailCapturePage({ onEmailSubmit, companyName, companyLogo }: EmailCapturePageProps) {
   const [email, setEmail] = useState('');
   const [isValidEmail, setIsValidEmail] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,17 +56,43 @@ export default function EmailCapturePage({ onEmailSubmit }: EmailCapturePageProp
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-6 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            Revi AI & Automation
-          </h1>
-          <h2 className="text-xl font-semibold text-slate-600 mb-4">
-            Readiness Audit
-          </h2>
+          {companyLogo ? (
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-6 shadow-lg border border-slate-200">
+              <img 
+                src={companyLogo} 
+                alt={`${companyName} logo`}
+                className="w-12 h-12 object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/api/placeholder/48/48?text=' + encodeURIComponent((companyName || 'C').charAt(0));
+                }}
+              />
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-6 shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          )}
+          {companyName ? (
+            <>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">
+                {companyName}
+              </h1>
+              <h2 className="text-xl font-semibold text-slate-600 mb-4">
+                AI & Automation Readiness Audit
+              </h2>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">
+                Revi AI & Automation
+              </h1>
+              <h2 className="text-xl font-semibold text-slate-600 mb-4">
+                Readiness Audit
+              </h2>
+            </>
+          )}
           <div className="w-20 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mx-auto"></div>
         </div>
 
@@ -76,8 +104,8 @@ export default function EmailCapturePage({ onEmailSubmit }: EmailCapturePageProp
                 Get Your Custom Report
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Complete our 8-part assessment and receive a personalized AI & Automation 
-                readiness report with actionable recommendations for your business.
+                Thank you for completing the assessment! Enter your email address to receive 
+                your personalized AI & Automation readiness report with actionable recommendations.
               </p>
             </div>
 
@@ -151,10 +179,10 @@ export default function EmailCapturePage({ onEmailSubmit }: EmailCapturePageProp
                 {isSubmitting ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Starting Assessment...</span>
+                    <span>Sending Report...</span>
                   </div>
                 ) : (
-                  'Start Your Free Assessment'
+                  'Get My Assessment Report'
                 )}
               </button>
             </form>

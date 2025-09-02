@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { questions } from "@/lib/db/schema";
+import { questionCategories, questions } from "@/lib/db/schema";
 import {
   createQuestionSchema,
   questionQuerySchema,
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = questionQuerySchema.parse(queryParams);
 
-    const { page, limit, categoryId, type, required, search, sortOrder } = validatedQuery;
+    const { page, limit, categoryId, type, required, search, sortOrder } =
+      validatedQuery;
 
     const offset = (page - 1) * limit;
 
@@ -54,10 +55,7 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .offset(offset),
 
-      db
-        .select({ count: questions.id })
-        .from(questions)
-        .where(whereClause),
+      db.select({ count: questions.id }).from(questions).where(whereClause),
     ]);
 
     const totalCount = totalCountResult.length;
@@ -66,7 +64,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        questions: questionsList,
         pagination: {
           page,
           limit,
@@ -75,6 +72,7 @@ export async function GET(request: NextRequest) {
           hasNext: page < totalPages,
           hasPrev: page > 1,
         },
+        questions: questionsList,
       },
     });
   } catch (error) {
@@ -87,6 +85,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createQuestionSchema.parse(body);
+
+    const questionCategory = await db.query.questionCategories.findFirst({
+      where: eq(questionCategories.id, validatedData.categoryId),
+    });
+
+    if (!questionCategory) {
+      throw new Error("Question category not found");
+    }
 
     const [newQuestion] = await db
       .insert(questions)

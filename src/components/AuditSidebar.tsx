@@ -11,9 +11,11 @@ interface AuditSidebarProps {
   sections: FormSection[];
   currentSection: number;
   onSectionClick?: (sectionId: number) => void;
+  companyName?: string;
+  companyLogo?: string;
 }
 
-export default function AuditSidebar({ sections, currentSection, onSectionClick }: AuditSidebarProps) {
+export default function AuditSidebar({ sections, currentSection, onSectionClick, companyName, companyLogo }: AuditSidebarProps) {
   const getSectionStatus = (sectionId: number) => {
     if (sectionId < currentSection) return 'completed';
     if (sectionId === currentSection) return 'current';
@@ -23,7 +25,7 @@ export default function AuditSidebar({ sections, currentSection, onSectionClick 
   return (
     <div className="w-80 sm:w-80 bg-gradient-to-b from-slate-50 to-white border-r border-slate-200/60 shadow-xl h-full overflow-y-auto">
       <div className="p-4 sm:p-6 lg:p-8">
-        <SidebarHeader />
+        <SidebarHeader companyName={companyName} companyLogo={companyLogo} />
         
         <ProgressOverview 
           currentSection={currentSection}

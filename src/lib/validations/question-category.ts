@@ -18,11 +18,6 @@ export const createQuestionCategorySchema = z.object({
 });
 
 export const updateQuestionCategorySchema = z.object({
-  formId: z
-    .number("Form ID must be a number")
-    .int("Form ID must be an integer")
-    .positive("Form ID must be a positive integer")
-    .optional(),
   name: z
     .string("Category name must be a string")
     .min(1, "Category name is required")
@@ -71,13 +66,17 @@ export const questionCategoryQuerySchema = z.object({
     .string("Search term must be a string")
     .max(255, "Search term must be less than 255 characters")
     .optional(),
-  sortBy: z
-    .enum(["name", "createdAt", "order"])
-    .default("createdAt"),
+  sortBy: z.enum(["name", "createdAt", "order"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
-export type CreateQuestionCategory = z.infer<typeof createQuestionCategorySchema>;
-export type UpdateQuestionCategory = z.infer<typeof updateQuestionCategorySchema>;
-export type QuestionCategoryParams = z.infer<typeof questionCategoryParamsSchema>;
+export type CreateQuestionCategory = z.infer<
+  typeof createQuestionCategorySchema
+>;
+export type UpdateQuestionCategory = z.infer<
+  typeof updateQuestionCategorySchema
+>;
+export type QuestionCategoryParams = z.infer<
+  typeof questionCategoryParamsSchema
+>;
 export type QuestionCategoryQuery = z.infer<typeof questionCategoryQuerySchema>;
