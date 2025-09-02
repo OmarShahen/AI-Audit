@@ -5,8 +5,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import TextAreaField from "@/components/form/TextAreaField";
 import RadioGroupField from "@/components/form/RadioGroupField";
-import FormLoader, { QuestionOptionLoader } from "@/components/ui/FormLoader";
-import { Company, QuestionCategory, Question, QuestionOption, FormData, FormSection } from "@/types";
+import FormLoader from "@/components/ui/FormLoader";
+import FormNavigation from "@/components/ui/FormNavigation";
+import FormHeader from "@/components/ui/FormHeader";
+import EmptySection from "@/components/ui/EmptySection";
+import { Company, QuestionCategory, Question, FormData, FormSection } from "@/types";
 
 
 export default function CompanyAuditForm() {
@@ -17,9 +20,6 @@ export default function CompanyAuditForm() {
 
   const [questions, setQuestions] = useState<{
     [categoryId: number]: Question[];
-  }>({});
-  const [questionOptions, setQuestionOptions] = useState<{
-    [questionId: number]: QuestionOption[];
   }>({});
   
   const [currentSection, setCurrentSection] = useState(() => {
@@ -54,49 +54,71 @@ export default function CompanyAuditForm() {
     fetchData();
   }, [companyName]);
 
-  // Fetch questions for a specific category
+  // Add error state for questions
+  const [questionErrors, setQuestionErrors] = useState<{
+    [categoryId: number]: string;
+  }>({});
+
+  // Fetch questions for a specific category with embedded options and conditionals
   const fetchQuestionsForCategory = async (categoryId: number) => {
     if (questions[categoryId]) return questions[categoryId];
 
     try {
+      // Clear any previous error for this category
+      setQuestionErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[categoryId];
+        return newErrors;
+      });
+
       const response = await axios.get(
         `/api/questions?categoryId=${categoryId}&sortBy=order&sortOrder=asc&limit=100`
       );
       const categoryQuestions = response.data.data?.questions || [];
 
       setQuestions((prev) => ({ ...prev, [categoryId]: categoryQuestions }));
-
-      // Fetch options for multiple choice and checkbox questions
-      const questionsWithOptions = categoryQuestions.filter(
-        (q: Question) => q.type === "multiple_choice" || q.type === "checkbox"
-      );
-
-      for (const question of questionsWithOptions) {
-        if (!questionOptions[question.id]) {
-          try {
-            const optionsResponse = await axios.get(
-              `/api/question-options?questionId=${question.id}&sortBy=order&sortOrder=asc&limit=100`
-            );
-            const options = optionsResponse.data.data?.questionOptions || [];
-            setQuestionOptions((prev) => ({
-              ...prev,
-              [question.id]: options,
-            }));
-          } catch (optionError) {
-            console.error(`Error fetching options for question ${question.id}:`, optionError);
-          }
-        }
-      }
-
       return categoryQuestions;
     } catch (error) {
       console.error("Error fetching questions:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load questions';
+      setQuestionErrors((prev) => ({ ...prev, [categoryId]: errorMessage }));
       return [];
+    }
+  };
+
+  // Fetch questions based on current section from URL
+  const fetchQuestionsForCurrentSection = async () => {
+    const sectionParam = searchParams.get('section');
+    const section = sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
+    
+    const currentSectionData = FORM_SECTIONS.find(s => s.id === section);
+    if (currentSectionData?.categoryId && !questions[currentSectionData.categoryId]) {
+      await fetchQuestionsForCategory(currentSectionData.categoryId);
     }
   };
 
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Check if a question should be shown based on conditionals
+  const shouldShowQuestion = (question: Question) => {
+    if (!question.conditionals || question.conditionals.length === 0) {
+      return true; // No conditionals, always show
+    }
+
+    // Check all conditionals - question is shown if any conditional is met
+    return question.conditionals.some((conditional) => {
+      const conditionFieldKey = `question_${conditional.conditionQuestionId}`;
+      const conditionValue = formData[conditionFieldKey];
+      
+      // Handle different value types
+      if (Array.isArray(conditionValue)) {
+        return conditionValue.includes(conditional.conditionValue) === conditional.showQuestion;
+      } else {
+        return (conditionValue === conditional.conditionValue) === conditional.showQuestion;
+      }
+    });
   };
 
   // Function to update URL with current section
@@ -118,15 +140,19 @@ export default function CompanyAuditForm() {
           }))
       : [];
 
-  // Fetch questions for current section
+  // Fetch questions for current section based on URL parameter
   useEffect(() => {
     if (categories.length > 0) {
-      const currentSectionData = FORM_SECTIONS.find(s => s.id === currentSection);
-      if (currentSectionData?.categoryId && !questions[currentSectionData.categoryId]) {
-        fetchQuestionsForCategory(currentSectionData.categoryId);
-      }
+      fetchQuestionsForCurrentSection();
     }
-  }, [currentSection, categories]);
+  }, [searchParams, categories]);
+
+  // Update current section when URL changes
+  useEffect(() => {
+    const sectionParam = searchParams.get('section');
+    const urlSection = sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
+    setCurrentSection(urlSection);
+  }, [searchParams]);
 
   // Validate current section before moving to next
   const validateCurrentSection = () => {
@@ -134,9 +160,11 @@ export default function CompanyAuditForm() {
     if (!currentSectionData?.categoryId) return true;
 
     const categoryQuestions = questions[currentSectionData.categoryId] || [];
-    const requiredQuestions = categoryQuestions.filter((q) => q.required);
+    // Only validate visible questions that are required
+    const visibleRequiredQuestions = categoryQuestions
+      .filter((q) => q.required && shouldShowQuestion(q));
 
-    for (const question of requiredQuestions) {
+    for (const question of visibleRequiredQuestions) {
       const fieldKey = `question_${question.id}`;
       const value = formData[fieldKey];
 
@@ -198,15 +226,7 @@ export default function CompanyAuditForm() {
         );
 
       case "multiple_choice":
-        const options = questionOptions[question.id] || [];
-
-        if (options.length === 0) {
-          return (
-            <div key={question.id} className="space-y-3">
-              <QuestionOptionLoader optionCount={3} />
-            </div>
-          );
-        }
+        const options = question.options || [];
 
         return (
           <div key={question.id} className="space-y-3">
@@ -225,16 +245,8 @@ export default function CompanyAuditForm() {
         );
 
       case "checkbox":
-        const checkboxOptions = questionOptions[question.id] || [];
+        const checkboxOptions = question.options || [];
         const selectedValues = Array.isArray(value) ? value : [];
-
-        if (checkboxOptions.length === 0) {
-          return (
-            <div key={question.id} className="space-y-3">
-              <QuestionOptionLoader optionCount={3} />
-            </div>
-          );
-        }
 
         return (
           <div key={question.id} className="space-y-3">
@@ -245,9 +257,9 @@ export default function CompanyAuditForm() {
               )}
             </label>
             <div className="space-y-3">
-              {checkboxOptions.map((option) => (
+              {checkboxOptions.map((option, index) => (
                 <label
-                  key={option.id}
+                  key={`${question.id}-${option.value}-${index}`}
                   className="flex items-start cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
                 >
                   <input
@@ -278,43 +290,91 @@ export default function CompanyAuditForm() {
         );
 
       case "conditional":
-        return (
-          <div key={question.id} className="space-y-3">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start space-x-2">
-                <svg
-                  className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-blue-800 font-medium text-sm">
-                    Conditional Question
-                  </p>
-                  <p className="text-blue-700 text-xs mt-1">
-                    Your answer may reveal additional follow-up questions
-                  </p>
+        // Check if this conditional question has options
+        const conditionalOptions = question.options || [];
+        
+        if (conditionalOptions.length > 0) {
+          // Render as multiple choice with conditional info
+          return (
+            <div key={question.id} className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <svg
+                    className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-blue-800 font-medium text-sm">
+                      Conditional Question
+                    </p>
+                    <p className="text-blue-700 text-xs mt-1">
+                      Your answer may reveal additional follow-up questions
+                    </p>
+                  </div>
                 </div>
               </div>
+              <RadioGroupField
+                label={question.text}
+                value={value as string}
+                onChange={(newValue) => handleInputChange(fieldKey, newValue)}
+                options={conditionalOptions.map((opt) => ({
+                  value: opt.value,
+                  label: opt.text,
+                }))}
+                name={fieldKey}
+                required={question.required}
+              />
             </div>
-            <TextAreaField
-              label={question.text}
-              value={value as string}
-              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-              required={question.required}
-              rows={4}
-              placeholder="Please provide details..."
-            />
-          </div>
-        );
+          );
+        } else {
+          // Render as text area with conditional info
+          return (
+            <div key={question.id} className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <svg
+                    className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-blue-800 font-medium text-sm">
+                      Conditional Question
+                    </p>
+                    <p className="text-blue-700 text-xs mt-1">
+                      Your answer may reveal additional follow-up questions
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <TextAreaField
+                label={question.text}
+                value={value as string}
+                onChange={(newValue) => handleInputChange(fieldKey, newValue)}
+                required={question.required}
+                rows={4}
+                placeholder="Please provide details..."
+              />
+            </div>
+          );
+        }
 
       default:
         return (
@@ -353,41 +413,66 @@ export default function CompanyAuditForm() {
 
     if (!currentSectionData?.categoryId) {
       return (
-        <div className="text-center py-16 text-gray-500">
-          <div className="mb-4">
-            <svg
-              className="w-12 h-12 mx-auto text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-slate-600 mb-2">
-            {currentSectionData?.title}
-          </h3>
-          <p>Content coming soon...</p>
-        </div>
+        <EmptySection
+          title={currentSectionData?.title}
+          message="Content coming soon..."
+          icon="document"
+        />
       );
     }
 
     const categoryQuestions = questions[currentSectionData.categoryId] || [];
+    const hasError = questionErrors[currentSectionData.categoryId];
 
-    if (!categoryQuestions.length && currentSectionData?.categoryId) {
+    // Show error state if there's an error loading questions
+    if (hasError) {
+      return (
+        <EmptySection
+          title="Failed to Load Questions"
+          message={`Unable to load questions for this section. ${hasError}`}
+          icon="error"
+          variant="error"
+          actionButton={{
+            text: "Retry Loading",
+            onClick: () => {
+              // Clear error and retry fetching
+              setQuestionErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[currentSectionData.categoryId];
+                return newErrors;
+              });
+              fetchQuestionsForCategory(currentSectionData.categoryId);
+            }
+          }}
+        />
+      );
+    }
+
+    // Show loading state if no questions and no error
+    if (!categoryQuestions.length && currentSectionData?.categoryId && !hasError) {
       return <FormLoader questionCount={3} />;
     }
 
+    // Show empty state if no questions after loading
+    if (!categoryQuestions.length && !hasError) {
+      return (
+        <EmptySection
+          title={currentSectionData.title}
+          message="No questions available for this section."
+          icon="empty"
+          variant="default"
+        />
+      );
+    }
+
+    // Filter questions based on conditionals and sort by order
+    const visibleQuestions = categoryQuestions
+      .filter((question) => shouldShowQuestion(question))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
     return (
       <div className="space-y-8">
-        {categoryQuestions
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((question) => renderQuestion(question))}
+        {visibleQuestions.map((question) => renderQuestion(question))}
       </div>
     );
   };
@@ -396,135 +481,27 @@ export default function CompanyAuditForm() {
     <div className="p-4 lg:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
-          {/* Header - Desktop only */}
-          <div className="hidden lg:block bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200/60 px-6 lg:px-8 py-4 lg:py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <img
-                  src={company.imageURL}
-                  alt={`${company.name} logo`}
-                  className="h-12 w-12 rounded-lg object-contain bg-white p-1 border border-slate-200"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "/api/placeholder/48/48?text=" +
-                      encodeURIComponent(company.name.charAt(0));
-                  }}
-                />
-                <div>
-                  <h2 className="text-xl lg:text-2xl font-bold text-slate-800 mb-1">
-                    Part {currentSection}:{" "}
-                    {FORM_SECTIONS.find((s) => s.id === currentSection)?.title}
-                  </h2>
-                  <p className="text-slate-600 text-sm lg:text-base">
-                    {company.name} • Section {currentSection} of{" "}
-                    {FORM_SECTIONS.length}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="px-3 py-1 bg-white/70 backdrop-blur-sm rounded-full border border-slate-200/60 text-sm font-medium text-slate-600">
-                  {Math.round(
-                    ((currentSection - 1) / FORM_SECTIONS.length) * 100
-                  )}
-                  % Complete
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Header */}
-          <div className="lg:hidden bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200/60 px-4 py-4">
-            <div className="flex items-center space-x-3 mb-2">
-              <img
-                src={company.imageURL}
-                alt={`${company.name} logo`}
-                className="h-8 w-8 rounded object-contain bg-white p-1 border border-slate-200"
-                onError={(e) => {
-                  e.currentTarget.src =
-                    "/api/placeholder/32/32?text=" +
-                    encodeURIComponent(company.name.charAt(0));
-                }}
-              />
-              <h2 className="text-lg font-bold text-slate-800">
-                {FORM_SECTIONS.find((s) => s.id === currentSection)?.title}
-              </h2>
-            </div>
-            <p className="text-slate-600 text-sm">
-              {company.name} • Section {currentSection} of{" "}
-              {FORM_SECTIONS.length}
-            </p>
-          </div>
+          {/* Form Header */}
+          <FormHeader
+            companyName={company.name}
+            companyLogo={company.imageURL}
+            currentSection={currentSection}
+            totalSections={FORM_SECTIONS.length}
+            currentSectionTitle={FORM_SECTIONS.find((s) => s.id === currentSection)?.title || ""}
+          />
 
           {/* Form Content */}
           <div className="p-4 lg:p-8">{renderCurrentSection()}</div>
 
           {/* Navigation */}
-          <div className="bg-slate-50/50 border-t border-slate-200/60 px-4 lg:px-8 py-4 lg:py-6">
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handleBack}
-                disabled={currentSection === 1}
-                className="inline-flex items-center px-4 lg:px-6 py-2 lg:py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm text-sm lg:text-base"
-              >
-                <svg
-                  className="w-4 h-4 mr-1 lg:mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                <span className="hidden sm:inline">Back</span>
-              </button>
-
-              <div className="flex items-center space-x-1 lg:space-x-2">
-                {FORM_SECTIONS.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full transition-all duration-300 ${
-                      index < currentSection - 1
-                        ? "bg-emerald-500"
-                        : index === currentSection - 1
-                        ? "bg-blue-500"
-                        : "bg-slate-300"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <button
-                onClick={handleNext}
-                className="inline-flex items-center px-4 lg:px-6 py-2 lg:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl text-sm lg:text-base"
-              >
-                <span className="hidden sm:inline">
-                  {currentSection === FORM_SECTIONS.length
-                    ? "Complete Assessment"
-                    : "Next"}
-                </span>
-                <span className="sm:hidden">
-                  {currentSection === FORM_SECTIONS.length ? "✓" : "→"}
-                </span>
-                <svg
-                  className="w-4 h-4 ml-1 lg:ml-2 hidden sm:inline"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <FormNavigation
+            currentSection={currentSection}
+            totalSections={FORM_SECTIONS.length}
+            onBack={handleBack}
+            onNext={handleNext}
+            isFirstSection={currentSection === 1}
+            isLastSection={currentSection === FORM_SECTIONS.length}
+          />
         </div>
       </div>
     </div>

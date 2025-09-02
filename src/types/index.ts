@@ -18,7 +18,7 @@ export interface QuestionCategory {
   createdAt: string;
 }
 
-// Question interface
+// Question interface with embedded options and conditionals
 export interface Question {
   id: number;
   categoryId: number;
@@ -27,16 +27,22 @@ export interface Question {
   required: boolean;
   order: number;
   createdAt: string;
+  options: QuestionOption[];
+  conditionals: QuestionConditional[];
 }
 
-// Question option interface
+// Question option interface (embedded, no separate IDs)
 export interface QuestionOption {
-  id: number;
-  questionId: number;
   text: string;
   value: string;
   order: number;
-  createdAt: string;
+}
+
+// Question conditional interface (embedded, no separate IDs)
+export interface QuestionConditional {
+  conditionQuestionId: number;
+  conditionValue: string;
+  showQuestion: boolean;
 }
 
 // Form section interface (used in sidebar)
@@ -70,6 +76,3 @@ export interface QuestionsApiResponse {
   questions: Question[];
 }
 
-export interface QuestionOptionsApiResponse {
-  questionOptions: QuestionOption[];
-}

@@ -7,6 +7,7 @@ import {
   timestamp,
   pgEnum,
   boolean,
+  json,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -80,32 +81,19 @@ export const questions = pgTable("questions", {
   type: questionTypeEnum("type").notNull(),
   required: boolean("required").default(false).notNull(),
   order: integer("order").default(0),
+  options: json("options").$type<{
+    text: string;
+    value: string;
+    order: number;
+  }[]>().default([]),
+  conditionals: json("conditionals").$type<{
+    conditionQuestionId: number;
+    conditionValue: string;
+    showQuestion: boolean;
+  }[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const questionOptions = pgTable("question_options", {
-  id: serial("id").primaryKey(),
-  questionId: integer("question_id")
-    .notNull()
-    .references(() => questions.id),
-  text: varchar("text", { length: 255 }).notNull(),
-  value: varchar("value", { length: 255 }).notNull(),
-  order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const questionConditionals = pgTable("question_conditionals", {
-  id: serial("id").primaryKey(),
-  questionId: integer("question_id")
-    .notNull()
-    .references(() => questions.id),
-  conditionQuestionId: integer("condition_question_id")
-    .notNull()
-    .references(() => questions.id),
-  conditionValue: varchar("condition_value", { length: 255 }).notNull(),
-  showQuestion: boolean("show_question").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
 export const submissions = pgTable("submissions", {
   id: serial("id").primaryKey(),
@@ -162,38 +150,9 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     fields: [questions.categoryId],
     references: [questionCategories.id],
   }),
-  options: many(questionOptions),
-  conditionals: many(questionConditionals),
-  conditionFor: many(questionConditionals, {
-    relationName: "conditionQuestion",
-  }),
   answers: many(answers),
 }));
 
-export const questionOptionsRelations = relations(
-  questionOptions,
-  ({ one }) => ({
-    question: one(questions, {
-      fields: [questionOptions.questionId],
-      references: [questions.id],
-    }),
-  })
-);
-
-export const questionConditionalsRelations = relations(
-  questionConditionals,
-  ({ one }) => ({
-    question: one(questions, {
-      fields: [questionConditionals.questionId],
-      references: [questions.id],
-    }),
-    conditionQuestion: one(questions, {
-      fields: [questionConditionals.conditionQuestionId],
-      references: [questions.id],
-      relationName: "conditionQuestion",
-    }),
-  })
-);
 
 export const submissionsRelations = relations(submissions, ({ one, many }) => ({
   form: one(forms, {

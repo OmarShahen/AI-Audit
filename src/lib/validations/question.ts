@@ -5,6 +5,18 @@ export const questionTypeSchema = z.enum(
   { error: "Invalid question type value" }
 );
 
+export const questionOptionSchema = z.object({
+  text: z.string().min(1, "Option text is required").trim(),
+  value: z.string().min(1, "Option value is required").trim(),
+  order: z.number().int().min(0).default(0),
+});
+
+export const questionConditionalSchema = z.object({
+  conditionQuestionId: z.number().int().positive("Condition question ID must be a positive integer"),
+  conditionValue: z.string().min(1, "Condition value is required").trim(),
+  showQuestion: z.boolean().default(true),
+});
+
 export const createQuestionSchema = z.object({
   categoryId: z
     .number("Category ID is required")
@@ -21,7 +33,21 @@ export const createQuestionSchema = z.object({
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .default(0),
-});
+  options: z.array(questionOptionSchema).optional(),
+  conditionals: z.array(questionConditionalSchema).optional(),
+}).refine(
+  (data) => {
+    // If question type is multiple_choice or checkbox, options are required
+    if (['multiple_choice', 'checkbox'].includes(data.type) && (!data.options || data.options.length === 0)) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Options are required for multiple choice and checkbox questions",
+    path: ["options"],
+  }
+);
 
 export const updateQuestionSchema = z.object({
   text: z
@@ -36,6 +62,8 @@ export const updateQuestionSchema = z.object({
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .optional(),
+  options: z.array(questionOptionSchema).optional(),
+  conditionals: z.array(questionConditionalSchema).optional(),
 });
 
 export const questionParamsSchema = z.object({
@@ -83,6 +111,8 @@ export const questionQuerySchema = z.object({
 });
 
 export type QuestionType = z.infer<typeof questionTypeSchema>;
+export type QuestionOption = z.infer<typeof questionOptionSchema>;
+export type QuestionConditional = z.infer<typeof questionConditionalSchema>;
 export type CreateQuestion = z.infer<typeof createQuestionSchema>;
 export type UpdateQuestion = z.infer<typeof updateQuestionSchema>;
 export type QuestionParams = z.infer<typeof questionParamsSchema>;
