@@ -6,24 +6,8 @@ import axios from "axios";
 import AuditSidebar from "@/components/AuditSidebar";
 import PageLoader from "@/components/ui/PageLoader";
 import MobileHeader from "@/components/ui/MobileHeader";
+import { Company, QuestionCategory, FormSection, CompanyApiResponse, ApiResponse, QuestionCategoriesApiResponse } from "@/types";
 
-interface Company {
-  id: number;
-  name: string;
-  industry: string;
-  size: string;
-  imageURL: string;
-  formId: number;
-  createdAt: string;
-}
-
-interface QuestionCategory {
-  id: number;
-  formId: number;
-  name: string;
-  order: number;
-  createdAt: string;
-}
 
 export default function CompanyLayout({
   children,
@@ -105,7 +89,7 @@ export default function CompanyLayout({
   };
 
   // Create sections based on categories
-  const FORM_SECTIONS =
+  const FORM_SECTIONS: FormSection[] =
     categories.length > 0
       ? categories
           .sort((a, b) => (a.order || 0) - (b.order || 0))

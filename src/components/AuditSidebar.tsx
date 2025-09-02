@@ -1,11 +1,8 @@
 import SidebarHeader from './sidebar/SidebarHeader';
 import ProgressOverview from './sidebar/ProgressOverview';
 import SectionNavigationItem from './sidebar/SectionNavigationItem';
+import { FormSection } from '@/types';
 
-interface FormSection {
-  id: number;
-  title: string;
-}
 
 interface AuditSidebarProps {
   sections: FormSection[];

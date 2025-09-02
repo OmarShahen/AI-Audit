@@ -6,29 +6,8 @@ import axios from "axios";
 import TextAreaField from "@/components/form/TextAreaField";
 import RadioGroupField from "@/components/form/RadioGroupField";
 import FormLoader, { QuestionOptionLoader } from "@/components/ui/FormLoader";
+import { Company, QuestionCategory, Question, QuestionOption, FormData, FormSection } from "@/types";
 
-interface Question {
-  id: number;
-  categoryId: number;
-  text: string;
-  type: "text" | "multiple_choice" | "checkbox" | "conditional";
-  required: boolean;
-  order: number;
-  createdAt: string;
-}
-
-interface QuestionOption {
-  id: number;
-  questionId: number;
-  text: string;
-  value: string;
-  order: number;
-  createdAt: string;
-}
-
-interface FormData {
-  [key: string]: string | string[]; // Dynamic form data
-}
 
 export default function CompanyAuditForm() {
   const params = useParams();
@@ -50,8 +29,8 @@ export default function CompanyAuditForm() {
   const [formData, setFormData] = useState<FormData>({});
   
   // Temporary states for company data - will be optimized with context later
-  const [company, setCompany] = useState<any>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [categories, setCategories] = useState<QuestionCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch company data and categories (simplified)
@@ -128,7 +107,7 @@ export default function CompanyAuditForm() {
   };
 
   // Create sections based on categories
-  const FORM_SECTIONS =
+  const FORM_SECTIONS: FormSection[] =
     categories.length > 0
       ? categories
           .sort((a, b) => (a.order || 0) - (b.order || 0))

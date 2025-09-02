@@ -1,7 +1,4 @@
-interface FormSection {
-  id: number;
-  title: string;
-}
+import { FormSection } from '@/types';
 
 interface SectionNavigationItemProps {
   section: FormSection;

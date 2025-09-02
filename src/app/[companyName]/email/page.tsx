@@ -5,16 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import EmailCapturePage from '@/components/EmailCapturePage';
 import PageLoader from '@/components/ui/PageLoader';
+import { Company } from '@/types';
 
-interface Company {
-  id: number;
-  name: string;
-  industry: string;
-  size: string;
-  imageURL: string;
-  formId: number;
-  createdAt: string;
-}
 
 export default function CompanyEmailCapture() {
   const params = useParams();
