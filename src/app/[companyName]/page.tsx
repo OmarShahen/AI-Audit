@@ -9,8 +9,13 @@ import FormLoader from "@/components/ui/FormLoader";
 import FormNavigation from "@/components/ui/FormNavigation";
 import FormHeader from "@/components/ui/FormHeader";
 import EmptySection from "@/components/ui/EmptySection";
-import { Company, QuestionCategory, Question, FormData, FormSection } from "@/types";
-
+import {
+  Company,
+  QuestionCategory,
+  Question,
+  FormData,
+  FormSection,
+} from "@/types";
 
 export default function CompanyAuditForm() {
   const params = useParams();
@@ -18,26 +23,29 @@ export default function CompanyAuditForm() {
   const searchParams = useSearchParams();
   const companyName = params.companyName as string;
 
-  const [questions, setQuestions] = useState<{
-    [categoryId: number]: Question[];
-  }>({});
-  
+  const [questions, setQuestions] = useState<Question[]>([]);
+
   const [currentSection, setCurrentSection] = useState(() => {
-    const sectionParam = searchParams.get('section');
+    const sectionParam = searchParams.get("section");
     return sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
   });
   const [formData, setFormData] = useState<FormData>({});
-  
+
   // Temporary states for company data - will be optimized with context later
   const [company, setCompany] = useState<Company | null>(null);
   const [categories, setCategories] = useState<QuestionCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(true);
+
+  const [isQuestionsError, setIsQuestionsError] = useState(false);
 
   // Fetch company data and categories (simplified)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const companyResponse = await axios.get(`/api/companies/names/${encodeURIComponent(companyName)}`);
+        const companyResponse = await axios.get(
+          `/api/companies/names/${encodeURIComponent(companyName)}`
+        );
         setCompany(companyResponse.data.company);
 
         const categoriesResponse = await axios.get(
@@ -45,7 +53,7 @@ export default function CompanyAuditForm() {
         );
         setCategories(categoriesResponse.data.data.questionCategories || []);
       } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
       } finally {
         setLoading(false);
       }
@@ -53,49 +61,6 @@ export default function CompanyAuditForm() {
 
     fetchData();
   }, [companyName]);
-
-  // Add error state for questions
-  const [questionErrors, setQuestionErrors] = useState<{
-    [categoryId: number]: string;
-  }>({});
-
-  // Fetch questions for a specific category with embedded options and conditionals
-  const fetchQuestionsForCategory = async (categoryId: number) => {
-    if (questions[categoryId]) return questions[categoryId];
-
-    try {
-      // Clear any previous error for this category
-      setQuestionErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[categoryId];
-        return newErrors;
-      });
-
-      const response = await axios.get(
-        `/api/questions?categoryId=${categoryId}&sortBy=order&sortOrder=asc&limit=100`
-      );
-      const categoryQuestions = response.data.data?.questions || [];
-
-      setQuestions((prev) => ({ ...prev, [categoryId]: categoryQuestions }));
-      return categoryQuestions;
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load questions';
-      setQuestionErrors((prev) => ({ ...prev, [categoryId]: errorMessage }));
-      return [];
-    }
-  };
-
-  // Fetch questions based on current section from URL
-  const fetchQuestionsForCurrentSection = async () => {
-    const sectionParam = searchParams.get('section');
-    const section = sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
-    
-    const currentSectionData = FORM_SECTIONS.find(s => s.id === section);
-    if (currentSectionData?.categoryId && !questions[currentSectionData.categoryId]) {
-      await fetchQuestionsForCategory(currentSectionData.categoryId);
-    }
-  };
 
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -111,12 +76,18 @@ export default function CompanyAuditForm() {
     return question.conditionals.some((conditional) => {
       const conditionFieldKey = `question_${conditional.conditionQuestionId}`;
       const conditionValue = formData[conditionFieldKey];
-      
+
       // Handle different value types
       if (Array.isArray(conditionValue)) {
-        return conditionValue.includes(conditional.conditionValue) === conditional.showQuestion;
+        return (
+          conditionValue.includes(conditional.conditionValue) ===
+          conditional.showQuestion
+        );
       } else {
-        return (conditionValue === conditional.conditionValue) === conditional.showQuestion;
+        return (
+          (conditionValue === conditional.conditionValue) ===
+          conditional.showQuestion
+        );
       }
     });
   };
@@ -124,8 +95,8 @@ export default function CompanyAuditForm() {
   // Function to update URL with current section
   const updateUrlSection = (section: number) => {
     const url = new URL(window.location.href);
-    url.searchParams.set('section', section.toString());
-    window.history.replaceState({}, '', url.toString());
+    url.searchParams.set("section", section.toString());
+    window.history.replaceState({}, "", url.toString());
   };
 
   // Create sections based on categories
@@ -142,57 +113,35 @@ export default function CompanyAuditForm() {
 
   // Fetch questions for current section based on URL parameter
   useEffect(() => {
-    if (categories.length > 0) {
-      fetchQuestionsForCurrentSection();
-    }
-  }, [searchParams, categories]);
+    const fetchQuestions = async () => {
+      try {
+        setIsQuestionsLoading(true);
+        setIsQuestionsError(false);
+        const response = await axios.get("/api/questions", {
+          params: { categoryId: currentSection },
+        });
 
-  // Update current section when URL changes
-  useEffect(() => {
-    const sectionParam = searchParams.get('section');
-    const urlSection = sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
-    setCurrentSection(urlSection);
+        const { questions } = response.data.data;
+        setQuestions(questions);
+      } catch (error) {
+        console.error(error);
+        setIsQuestionsError(true);
+      } finally {
+        setIsQuestionsLoading(false);
+      }
+    };
+
+    fetchQuestions();
   }, [searchParams]);
 
-  // Validate current section before moving to next
-  const validateCurrentSection = () => {
-    const currentSectionData = FORM_SECTIONS.find(s => s.id === currentSection);
-    if (!currentSectionData?.categoryId) return true;
-
-    const categoryQuestions = questions[currentSectionData.categoryId] || [];
-    // Only validate visible questions that are required
-    const visibleRequiredQuestions = categoryQuestions
-      .filter((q) => q.required && shouldShowQuestion(q));
-
-    for (const question of visibleRequiredQuestions) {
-      const fieldKey = `question_${question.id}`;
-      const value = formData[fieldKey];
-
-      if (
-        !value ||
-        (Array.isArray(value) && value.length === 0) ||
-        (typeof value === "string" && value.trim() === "")
-      ) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleNext = () => {
-    if (!validateCurrentSection()) {
-      alert("Please answer all required questions before continuing.");
-      return;
-    }
-
     if (currentSection < FORM_SECTIONS.length) {
       const nextSection = currentSection + 1;
       updateUrlSection(nextSection);
       window.location.reload(); // Simple approach for now
     } else {
       // Form completed, store data and redirect to email page
-      sessionStorage.setItem('formData', JSON.stringify(formData));
+      sessionStorage.setItem("formData", JSON.stringify(formData));
       router.push(`/${companyName}/email`);
     }
   };
@@ -292,7 +241,7 @@ export default function CompanyAuditForm() {
       case "conditional":
         // Check if this conditional question has options
         const conditionalOptions = question.options || [];
-        
+
         if (conditionalOptions.length > 0) {
           // Render as multiple choice with conditional info
           return (
@@ -409,7 +358,9 @@ export default function CompanyAuditForm() {
 
   // Render current section with dynamic questions
   const renderCurrentSection = () => {
-    const currentSectionData = FORM_SECTIONS.find(s => s.id === currentSection);
+    const currentSectionData = FORM_SECTIONS.find(
+      (s) => s.id === currentSection
+    );
 
     if (!currentSectionData?.categoryId) {
       return (
@@ -421,58 +372,25 @@ export default function CompanyAuditForm() {
       );
     }
 
-    const categoryQuestions = questions[currentSectionData.categoryId] || [];
-    const hasError = questionErrors[currentSectionData.categoryId];
-
     // Show error state if there's an error loading questions
-    if (hasError) {
+    if (isQuestionsError) {
       return (
         <EmptySection
           title="Failed to Load Questions"
-          message={`Unable to load questions for this section. ${hasError}`}
+          message={`Unable to load questions for this section.`}
           icon="error"
           variant="error"
           actionButton={{
             text: "Retry Loading",
-            onClick: () => {
-              // Clear error and retry fetching
-              setQuestionErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[currentSectionData.categoryId];
-                return newErrors;
-              });
-              fetchQuestionsForCategory(currentSectionData.categoryId);
-            }
+            onClick: () => {},
           }}
         />
       );
     }
 
-    // Show loading state if no questions and no error
-    if (!categoryQuestions.length && currentSectionData?.categoryId && !hasError) {
-      return <FormLoader questionCount={3} />;
-    }
-
-    // Show empty state if no questions after loading
-    if (!categoryQuestions.length && !hasError) {
-      return (
-        <EmptySection
-          title={currentSectionData.title}
-          message="No questions available for this section."
-          icon="empty"
-          variant="default"
-        />
-      );
-    }
-
-    // Filter questions based on conditionals and sort by order
-    const visibleQuestions = categoryQuestions
-      .filter((question) => shouldShowQuestion(question))
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-
     return (
       <div className="space-y-8">
-        {visibleQuestions.map((question) => renderQuestion(question))}
+        {questions.map((question) => renderQuestion(question))}
       </div>
     );
   };
@@ -487,21 +405,29 @@ export default function CompanyAuditForm() {
             companyLogo={company.imageURL}
             currentSection={currentSection}
             totalSections={FORM_SECTIONS.length}
-            currentSectionTitle={FORM_SECTIONS.find((s) => s.id === currentSection)?.title || ""}
+            currentSectionTitle={
+              FORM_SECTIONS.find((s) => s.id === currentSection)?.title || ""
+            }
           />
 
-          {/* Form Content */}
-          <div className="p-4 lg:p-8">{renderCurrentSection()}</div>
+          {isQuestionsLoading ? (
+            <FormLoader questionCount={3} />
+          ) : (
+            <>
+              {/* Form Content */}
+              <div className="p-4 lg:p-8">{renderCurrentSection()}</div>
 
-          {/* Navigation */}
-          <FormNavigation
-            currentSection={currentSection}
-            totalSections={FORM_SECTIONS.length}
-            onBack={handleBack}
-            onNext={handleNext}
-            isFirstSection={currentSection === 1}
-            isLastSection={currentSection === FORM_SECTIONS.length}
-          />
+              {/* Navigation */}
+              <FormNavigation
+                currentSection={currentSection}
+                totalSections={FORM_SECTIONS.length}
+                onBack={handleBack}
+                onNext={handleNext}
+                isFirstSection={currentSection === 1}
+                isLastSection={currentSection === FORM_SECTIONS.length}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
