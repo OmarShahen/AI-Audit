@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import axios from 'axios';
 import EmailCapturePage from '@/components/EmailCapturePage';
 import PageLoader from '@/components/ui/PageLoader';
 
@@ -38,14 +39,10 @@ export default function CompanyEmailCapture() {
       try {
         setLoading(true);
         
-        const companyResponse = await fetch(
+        const companyResponse = await axios.get(
           `/api/companies/names/${encodeURIComponent(companyName)}`
         );
-        if (!companyResponse.ok) {
-          throw new Error('Company not found');
-        }
-        const companyData = await companyResponse.json();
-        setCompany(companyData.company);
+        setCompany(companyResponse.data.company);
         
       } catch (error) {
         console.error('Error fetching company data:', error);

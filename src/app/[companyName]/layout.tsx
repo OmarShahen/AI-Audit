@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import axios from "axios";
 import AuditSidebar from "@/components/AuditSidebar";
 import PageLoader from "@/components/ui/PageLoader";
 import MobileHeader from "@/components/ui/MobileHeader";
@@ -51,24 +52,16 @@ export default function CompanyLayout({
         setLoading(true);
 
         // Fetch company by name
-        const companyResponse = await fetch(
+        const companyResponse = await axios.get(
           `/api/companies/names/${encodeURIComponent(companyName)}`
         );
-        if (!companyResponse.ok) {
-          throw new Error("Company not found");
-        }
-        const companyData = await companyResponse.json();
-        setCompany(companyData.company);
+        setCompany(companyResponse.data.company);
 
         // Fetch question categories for this company's form
-        const categoriesResponse = await fetch(
-          `/api/question-categories?formId=${companyData.company.formId}&limit=25&sortBy=order&sortOrder=asc`
+        const categoriesResponse = await axios.get(
+          `/api/question-categories?formId=${companyResponse.data.company.formId}&limit=25&sortBy=order&sortOrder=asc`
         );
-        if (!categoriesResponse.ok) {
-          throw new Error("Failed to fetch question categories");
-        }
-        const categoriesData = await categoriesResponse.json();
-        setCategories(categoriesData.data.questionCategories || []);
+        setCategories(categoriesResponse.data.data.questionCategories || []);
       } catch (error) {
         console.error("Error fetching company data:", error);
         setError(

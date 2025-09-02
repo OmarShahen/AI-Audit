@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import axios from "axios";
 import TextAreaField from "@/components/form/TextAreaField";
 import RadioGroupField from "@/components/form/RadioGroupField";
 import FormLoader, { QuestionOptionLoader } from "@/components/ui/FormLoader";
@@ -57,15 +58,13 @@ export default function CompanyAuditForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const companyResponse = await fetch(`/api/companies/names/${encodeURIComponent(companyName)}`);
-        const companyData = await companyResponse.json();
-        setCompany(companyData.company);
+        const companyResponse = await axios.get(`/api/companies/names/${encodeURIComponent(companyName)}`);
+        setCompany(companyResponse.data.company);
 
-        const categoriesResponse = await fetch(
-          `/api/question-categories?formId=${companyData.company.formId}&limit=100&sortBy=order&sortOrder=asc`
+        const categoriesResponse = await axios.get(
+          `/api/question-categories?formId=${companyResponse.data.company.formId}&limit=100&sortBy=order&sortOrder=asc`
         );
-        const categoriesData = await categoriesResponse.json();
-        setCategories(categoriesData.data.questionCategories || []);
+        setCategories(categoriesResponse.data.data.questionCategories || []);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -81,11 +80,10 @@ export default function CompanyAuditForm() {
     if (questions[categoryId]) return questions[categoryId];
 
     try {
-      const response = await fetch(
+      const response = await axios.get(
         `/api/questions?categoryId=${categoryId}&sortBy=order&sortOrder=asc&limit=100`
       );
-      const data = await response.json();
-      const categoryQuestions = data.data?.questions || [];
+      const categoryQuestions = response.data.data?.questions || [];
 
       setQuestions((prev) => ({ ...prev, [categoryId]: categoryQuestions }));
 
@@ -97,17 +95,14 @@ export default function CompanyAuditForm() {
       for (const question of questionsWithOptions) {
         if (!questionOptions[question.id]) {
           try {
-            const optionsResponse = await fetch(
+            const optionsResponse = await axios.get(
               `/api/question-options?questionId=${question.id}&sortBy=order&sortOrder=asc&limit=100`
             );
-            if (optionsResponse.ok) {
-              const optionsData = await optionsResponse.json();
-              const options = optionsData.data?.questionOptions || [];
-              setQuestionOptions((prev) => ({
-                ...prev,
-                [question.id]: options,
-              }));
-            }
+            const options = optionsResponse.data.data?.questionOptions || [];
+            setQuestionOptions((prev) => ({
+              ...prev,
+              [question.id]: options,
+            }));
           } catch (optionError) {
             console.error(`Error fetching options for question ${question.id}:`, optionError);
           }
