@@ -35,12 +35,14 @@ export const reportParamsSchema = z.object({
 export const reportQuerySchema = z.object({
   page: z
     .string()
+    .default("1")
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Page must be a positive number",
     }),
   limit: z
     .string()
+    .default("10")
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0 && val <= 100, {
       message: "Limit must be between 1 and 100",
