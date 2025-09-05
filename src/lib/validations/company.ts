@@ -37,6 +37,7 @@ export const createCompanySchema = z.object({
   industry: industrySchema,
   size: companySizeSchema,
   imageURL: z.string().url("Invalid image URL"),
+  providerEmail: z.string().email().optional(),
 });
 
 export const updateCompanySchema = z.object({
@@ -50,6 +51,7 @@ export const updateCompanySchema = z.object({
   industry: industrySchema.optional(),
   size: companySizeSchema.optional(),
   imageURL: z.string().url("Invalid image URL").optional(),
+  providerEmail: z.string().email().optional(),
 });
 
 export const companyParamsSchema = z.object({

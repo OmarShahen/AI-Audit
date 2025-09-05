@@ -54,6 +54,7 @@ export const companies = pgTable("companies", {
   industry: industryEnum("industry").notNull(),
   size: companySizeEnum("size").notNull(),
   imageURL: varchar("image_url").notNull(),
+  providerEmail: varchar("provider_email"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

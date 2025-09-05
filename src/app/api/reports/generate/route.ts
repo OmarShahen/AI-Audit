@@ -74,9 +74,10 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Send both emails in parallel
+    // Send emails in parallel
     const agencyEmail = process.env.AGENCY_EMAIL!;
-    const [emailResult, agencyEmailResult] = await Promise.all([
+    const emailPromises = [
+      // Send to user
       sendReportEmail({
         email: validatedData.email,
         reportText: report,
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
         attachmentName: `${company.name}-audit-report`,
         format: "markdown",
       }),
+      // Send internal agency report
       sendReportEmail({
         email: agencyEmail,
         reportText: internalReport,
@@ -91,7 +93,23 @@ export async function POST(request: NextRequest) {
         attachmentName: `${company.name}-internal-agency-report`,
         format: "markdown",
       }),
-    ]);
+    ];
+
+    // Send to provider email if exists
+    if (company.providerEmail) {
+      emailPromises.push(
+        sendReportEmail({
+          email: company.providerEmail,
+          reportText: report,
+          subject: `${company.name} Technology & Workflow Opportunity Report`,
+          attachmentName: `${company.name}-audit-report`,
+          format: "markdown",
+        })
+      );
+    }
+
+    const [emailResult, agencyEmailResult, providerEmailResult] =
+      await Promise.all(emailPromises);
 
     if (!emailResult.success) {
       throw new Error("There was a problem sending your email");
@@ -103,6 +121,7 @@ export async function POST(request: NextRequest) {
         message: "Report generated and sent successfully!",
         emailData: emailResult.data,
         agencyReportMail: agencyEmailResult,
+        providerReportMail: providerEmailResult || null,
         report,
       },
       { status: 201 }
