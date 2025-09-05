@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-export const questionTypeSchema = z.enum(
-  ["text", "multiple_choice", "checkbox", "conditional"],
-  { error: "Invalid question type value" }
-);
+export const questionTypeSchema = z.enum([
+  "text",
+  "multiple_choice",
+  "checkbox",
+  "conditional",
+]);
 
 export const questionOptionSchema = z.object({
   text: z.string().min(1, "Option text is required").trim(),
@@ -12,53 +14,55 @@ export const questionOptionSchema = z.object({
 });
 
 export const questionConditionalSchema = z.object({
-  conditionQuestionId: z.number().int().positive("Condition question ID must be a positive integer"),
+  conditionQuestionId: z
+    .number()
+    .int()
+    .positive("Condition question ID must be a positive integer"),
   conditionValue: z.string().min(1, "Condition value is required").trim(),
   showQuestion: z.boolean().default(true),
 });
 
-export const createQuestionSchema = z.object({
-  categoryId: z
-    .number("Category ID is required")
-    .int("Category ID must be an integer")
-    .positive("Category ID must be a positive integer"),
-  text: z
-    .string("Question text is required")
-    .min(1, "Question text is required")
-    .trim(),
-  type: questionTypeSchema,
-  required: z.boolean("Required field must be a boolean").default(true),
-  order: z
-    .number("Order must be a number")
-    .int("Order must be an integer")
-    .min(0, "Order must be a non-negative integer")
-    .default(0),
-  options: z.array(questionOptionSchema).optional(),
-  conditionals: z.array(questionConditionalSchema).optional(),
-}).refine(
-  (data) => {
-    // If question type is multiple_choice or checkbox, options are required
-    if (['multiple_choice', 'checkbox'].includes(data.type) && (!data.options || data.options.length === 0)) {
-      return false;
+export const createQuestionSchema = z
+  .object({
+    categoryId: z
+      .number()
+      .int("Category ID must be an integer")
+      .positive("Category ID must be a positive integer"),
+    text: z.string().min(1, "Question text is required").trim(),
+    type: questionTypeSchema,
+    required: z.boolean().default(true),
+    order: z
+      .number()
+      .int("Order must be an integer")
+      .min(0, "Order must be a non-negative integer")
+      .default(0),
+    options: z.array(questionOptionSchema).optional(),
+    conditionals: z.array(questionConditionalSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      // If question type is multiple_choice or checkbox, options are required
+      if (
+        ["multiple_choice", "checkbox"].includes(data.type) &&
+        (!data.options || data.options.length === 0)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Options are required for multiple choice and checkbox questions",
+      path: ["options"],
     }
-    return true;
-  },
-  {
-    message: "Options are required for multiple choice and checkbox questions",
-    path: ["options"],
-  }
-);
+  );
 
 export const updateQuestionSchema = z.object({
-  text: z
-    .string("Question text must be a string")
-    .min(1, "Question text is required")
-    .trim()
-    .optional(),
+  text: z.string().min(1, "Question text is required").trim().optional(),
   type: questionTypeSchema.optional(),
-  required: z.boolean("Required field must be a boolean").optional(),
+  required: z.boolean().optional(),
   order: z
-    .number("Order must be a number")
+    .number()
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .optional(),
@@ -68,7 +72,7 @@ export const updateQuestionSchema = z.object({
 
 export const questionParamsSchema = z.object({
   id: z
-    .string("Question ID is required")
+    .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Invalid question ID",
@@ -81,15 +85,13 @@ export const questionQuerySchema = z.object({
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Page must be a positive number",
-    })
-    .default(1),
+    }),
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0 && val <= 100, {
       message: "Limit must be between 1 and 100",
-    })
-    .default(10),
+    }),
   categoryId: z
     .string()
     .transform((val) => parseInt(val, 10))
@@ -103,7 +105,7 @@ export const questionQuerySchema = z.object({
     .transform((val) => val.toLowerCase() === "true")
     .optional(),
   search: z
-    .string("Search term must be a string")
+    .string()
     .max(255, "Search term must be less than 255 characters")
     .optional(),
   sortBy: z.enum(["text", "createdAt", "order", "type"]).default("createdAt"),

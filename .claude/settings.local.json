@@ -3,7 +3,10 @@
     "allow": [
       "Bash(find:*)",
       "Bash(npm install:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)",
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)",
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)"
     ],
     "deny": [],
     "ask": []

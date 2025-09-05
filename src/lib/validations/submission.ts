@@ -5,23 +5,23 @@ import { eq, inArray, and } from "drizzle-orm";
 
 export const createSubmissionSchema = z.object({
   formId: z
-    .number("Form ID is required")
+    .number()
     .int("Form ID must be an integer")
     .positive("Form ID must be a positive integer"),
   companyId: z
-    .number("Company ID is required")
+    .number()
     .int("Company ID must be an integer")
     .positive("Company ID must be a positive integer"),
 });
 
 export const updateSubmissionSchema = z.object({
   formId: z
-    .number("Form ID must be a number")
+    .number()
     .int("Form ID must be an integer")
     .positive("Form ID must be a positive integer")
     .optional(),
   companyId: z
-    .number("Company ID must be a number")
+    .number()
     .int("Company ID must be an integer")
     .positive("Company ID must be a positive integer")
     .optional(),
@@ -29,7 +29,7 @@ export const updateSubmissionSchema = z.object({
 
 export const submissionParamsSchema = z.object({
   id: z
-    .string("Submission ID is required")
+    .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Invalid submission ID",
@@ -42,15 +42,13 @@ export const submissionQuerySchema = z.object({
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Page must be a positive number",
-    })
-    .default(1),
+    }),
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0 && val <= 100, {
       message: "Limit must be between 1 and 100",
-    })
-    .default(10),
+    }),
   formId: z
     .string()
     .transform((val) => parseInt(val, 10))
@@ -71,9 +69,7 @@ export const submissionQuerySchema = z.object({
 
 // Enhanced schema for complete form submission
 export const completeSubmissionSchema = z.object({
-  companyName: z
-    .string("Company name is required")
-    .min(1, "Company name is required"),
+  companyName: z.string().min(1, "Company name is required"),
   formData: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
 });
 

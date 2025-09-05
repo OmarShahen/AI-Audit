@@ -2,25 +2,22 @@ import { z } from "zod";
 
 export const createFormSchema = z.object({
   title: z
-    .string("Form title is required")
+    .string()
     .min(1, "Form title is required")
     .max(255, "Form title must be less than 255 characters")
     .trim(),
-  description: z
-    .string("Form description is required")
-    .min(1, "Form description is required")
-    .trim(),
+  description: z.string().min(1, "Form description is required").trim(),
 });
 
 export const updateFormSchema = z.object({
   title: z
-    .string("Form title must be a string")
+    .string()
     .min(1, "Form title is required")
     .max(255, "Form title must be less than 255 characters")
     .trim()
     .optional(),
   description: z
-    .string("Form description must be a string")
+    .string()
     .min(1, "Form description is required")
     .trim()
     .optional(),
@@ -28,7 +25,7 @@ export const updateFormSchema = z.object({
 
 export const formParamsSchema = z.object({
   id: z
-    .string("Form ID is required")
+    .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Invalid form ID",
@@ -41,22 +38,18 @@ export const formQuerySchema = z.object({
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Page must be a positive number",
-    })
-    .default(1),
+    }),
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0 && val <= 100, {
       message: "Limit must be between 1 and 100",
-    })
-    .default(10),
+    }),
   search: z
-    .string("Search term must be a string")
+    .string()
     .max(255, "Search term must be less than 255 characters")
     .optional(),
-  sortBy: z
-    .enum(["title", "createdAt"])
-    .default("createdAt"),
+  sortBy: z.enum(["title", "createdAt"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 

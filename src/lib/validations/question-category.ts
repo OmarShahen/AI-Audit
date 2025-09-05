@@ -2,16 +2,16 @@ import { z } from "zod";
 
 export const createQuestionCategorySchema = z.object({
   formId: z
-    .number("Form ID is required")
+    .number()
     .int("Form ID must be an integer")
     .positive("Form ID must be a positive integer"),
   name: z
-    .string("Category name is required")
+    .string()
     .min(1, "Category name is required")
     .max(255, "Category name must be less than 255 characters")
     .trim(),
   order: z
-    .number("Order must be a number")
+    .number()
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .default(0),
@@ -19,13 +19,13 @@ export const createQuestionCategorySchema = z.object({
 
 export const updateQuestionCategorySchema = z.object({
   name: z
-    .string("Category name must be a string")
+    .string()
     .min(1, "Category name is required")
     .max(255, "Category name must be less than 255 characters")
     .trim()
     .optional(),
   order: z
-    .number("Order must be a number")
+    .number()
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .optional(),
@@ -33,7 +33,7 @@ export const updateQuestionCategorySchema = z.object({
 
 export const questionCategoryParamsSchema = z.object({
   id: z
-    .string("Question category ID is required")
+    .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Invalid question category ID",
@@ -46,15 +46,13 @@ export const questionCategoryQuerySchema = z.object({
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Page must be a positive number",
-    })
-    .default(1),
+    }),
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0 && val <= 100, {
       message: "Limit must be between 1 and 100",
-    })
-    .default(10),
+    }),
   formId: z
     .string()
     .transform((val) => parseInt(val, 10))
@@ -63,7 +61,7 @@ export const questionCategoryQuerySchema = z.object({
     })
     .optional(),
   search: z
-    .string("Search term must be a string")
+    .string()
     .max(255, "Search term must be less than 255 characters")
     .optional(),
   sortBy: z.enum(["name", "createdAt", "order"]).default("createdAt"),
