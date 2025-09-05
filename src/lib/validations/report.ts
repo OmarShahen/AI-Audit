@@ -17,11 +17,6 @@ export const createReportSchema = z.object({
 });
 
 export const updateReportSchema = z.object({
-  submissionId: z
-    .number("Submission ID must be a number")
-    .int("Submission ID must be an integer")
-    .positive("Submission ID must be a positive integer")
-    .optional(),
   title: z
     .string("Report title must be a string")
     .min(1, "Report title is required")
@@ -70,13 +65,20 @@ export const reportQuerySchema = z.object({
     .string("Search term must be a string")
     .max(255, "Search term must be less than 255 characters")
     .optional(),
-  sortBy: z
-    .enum(["title", "createdAt", "generatedAt"])
-    .default("createdAt"),
+  sortBy: z.enum(["title", "createdAt", "generatedAt"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+// Schema for generating reports via OpenAI
+export const generateReportSchema = z.object({
+  submissionId: z
+    .number("submission ID is required")
+    .positive("Submission ID must be a positive number"),
+  email: z.string("Email is required").email("Valid email is required"),
 });
 
 export type CreateReport = z.infer<typeof createReportSchema>;
 export type UpdateReport = z.infer<typeof updateReportSchema>;
 export type ReportParams = z.infer<typeof reportParamsSchema>;
 export type ReportQuery = z.infer<typeof reportQuerySchema>;
+export type GenerateReport = z.infer<typeof generateReportSchema>;

@@ -47,7 +47,9 @@ export const questionTypeEnum = pgEnum("question_type", [
 
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
-  formId: integer("form_id").references(() => forms.id),
+  formId: integer("form_id")
+    .references(() => forms.id)
+    .notNull(),
   name: varchar("name", { length: 255 }).unique().notNull(),
   industry: industryEnum("industry").notNull(),
   size: companySizeEnum("size").notNull(),
@@ -81,19 +83,26 @@ export const questions = pgTable("questions", {
   type: questionTypeEnum("type").notNull(),
   required: boolean("required").default(false).notNull(),
   order: integer("order").default(0),
-  options: json("options").$type<{
-    text: string;
-    value: string;
-    order: number;
-  }[]>().default([]),
-  conditionals: json("conditionals").$type<{
-    conditionQuestionId: number;
-    conditionValue: string;
-    showQuestion: boolean;
-  }[]>().default([]),
+  options: json("options")
+    .$type<
+      {
+        text: string;
+        value: string;
+        order: number;
+      }[]
+    >()
+    .default([]),
+  conditionals: json("conditionals")
+    .$type<
+      {
+        conditionQuestionId: number;
+        conditionValue: string;
+        showQuestion: boolean;
+      }[]
+    >()
+    .default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
 
 export const submissions = pgTable("submissions", {
   id: serial("id").primaryKey(),
@@ -152,7 +161,6 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   }),
   answers: many(answers),
 }));
-
 
 export const submissionsRelations = relations(submissions, ({ one, many }) => ({
   form: one(forms, {

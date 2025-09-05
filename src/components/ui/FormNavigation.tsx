@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface FormNavigationProps {
   currentSection: number;
@@ -7,6 +7,7 @@ interface FormNavigationProps {
   onNext: () => void;
   isFirstSection: boolean;
   isLastSection: boolean;
+  isSubmitting: boolean;
 }
 
 export default function FormNavigation({
@@ -15,7 +16,8 @@ export default function FormNavigation({
   onBack,
   onNext,
   isFirstSection,
-  isLastSection
+  isLastSection,
+  isSubmitting,
 }: FormNavigationProps) {
   return (
     <div className="bg-slate-50/50 border-t border-slate-200/60 px-4 lg:px-8 py-4 lg:py-6">
@@ -61,24 +63,30 @@ export default function FormNavigation({
           className="inline-flex items-center px-4 lg:px-6 py-2 lg:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl text-sm lg:text-base"
         >
           <span className="hidden sm:inline">
-            {isLastSection ? "Complete Assessment" : "Next"}
+            {isLastSection
+              ? isSubmitting
+                ? "Submitting..."
+                : "Complete Assessment"
+              : "Next"}
           </span>
-          <span className="sm:hidden">
-            {isLastSection ? "✓" : "→"}
-          </span>
-          <svg
-            className="w-4 h-4 ml-1 lg:ml-2 hidden sm:inline"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          {!isSubmitting && (
+            <span className="sm:hidden">{isLastSection ? "✓" : "→"}</span>
+          )}
+          {!isSubmitting && (
+            <svg
+              className="w-4 h-4 ml-1 lg:ml-2 hidden sm:inline"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          )}
         </button>
       </div>
     </div>

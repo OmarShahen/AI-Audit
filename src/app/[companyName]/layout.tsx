@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import axios from "axios";
 import AuditSidebar from "@/components/AuditSidebar";
 import PageLoader from "@/components/ui/PageLoader";
 import MobileHeader from "@/components/ui/MobileHeader";
-import { Company, QuestionCategory, FormSection, CompanyApiResponse, ApiResponse, QuestionCategoriesApiResponse } from "@/types";
+import { useCompanyStore } from "@/store/company";
+import { FormSection } from "@/types";
 
 
 export default function CompanyLayout({
@@ -18,48 +18,23 @@ export default function CompanyLayout({
   const searchParams = useSearchParams();
   const companyName = params.companyName as string;
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [categories, setCategories] = useState<QuestionCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Use Zustand store for company data
+  const { company, categories, loading, error, fetchCompanyData } = useCompanyStore();
 
   const [currentSection, setCurrentSection] = useState(() => {
     const sectionParam = searchParams.get("section");
     return sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
   });
 
-  // Fetch company data and categories
+
+  // Fetch company data using Zustand store
   useEffect(() => {
-    const fetchCompanyData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch company by name
-        const companyResponse = await axios.get(
-          `/api/companies/names/${encodeURIComponent(companyName)}`
-        );
-        setCompany(companyResponse.data.company);
-
-        // Fetch question categories for this company's form
-        const categoriesResponse = await axios.get(
-          `/api/question-categories?formId=${companyResponse.data.company.formId}&limit=25&sortBy=order&sortOrder=asc`
-        );
-        setCategories(categoriesResponse.data.data.questionCategories || []);
-      } catch (error) {
-        console.error("Error fetching company data:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to load company data"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (companyName) {
-      fetchCompanyData();
+      fetchCompanyData(companyName);
     }
-  }, [companyName]);
+  }, [companyName, fetchCompanyData]);
 
   // Update current section based on URL changes
   useEffect(() => {
@@ -88,17 +63,20 @@ export default function CompanyLayout({
     }
   };
 
-  // Create sections based on categories
-  const FORM_SECTIONS: FormSection[] =
-    categories.length > 0
-      ? categories
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((cat, index) => ({
-            id: index + 1,
-            title: cat.name,
-            categoryId: cat.id,
-          }))
-      : [];
+  // Create sections based on categories using useMemo
+  const FORM_SECTIONS: FormSection[] = useMemo(
+    () =>
+      categories.length > 0
+        ? categories
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((cat, index) => ({
+              id: index + 1,
+              title: cat.name,
+              categoryId: cat.id,
+            }))
+        : [],
+    [categories]
+  );
 
   // Show loading state while fetching company data
   if (loading) {

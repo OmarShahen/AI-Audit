@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import TextAreaField from "@/components/form/TextAreaField";
@@ -9,13 +9,10 @@ import FormLoader from "@/components/ui/FormLoader";
 import FormNavigation from "@/components/ui/FormNavigation";
 import FormHeader from "@/components/ui/FormHeader";
 import EmptySection from "@/components/ui/EmptySection";
-import {
-  Company,
-  QuestionCategory,
-  Question,
-  FormData,
-  FormSection,
-} from "@/types";
+import { useCompanyStore } from "@/store/company";
+import { Question, FormData, FormSection } from "@/types";
+import { apiClient } from "@/lib/api";
+import toast from "react-hot-toast";
 
 export default function CompanyAuditForm() {
   const params = useParams();
@@ -24,72 +21,23 @@ export default function CompanyAuditForm() {
   const companyName = params.companyName as string;
 
   const [questions, setQuestions] = useState<Question[]>([]);
-
-  const [currentSection, setCurrentSection] = useState(() => {
-    const sectionParam = searchParams.get("section");
-    return sectionParam ? parseInt(sectionParam, 10) || 1 : 1;
-  });
+  const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState<FormData>({});
-
-  // Temporary states for company data - will be optimized with context later
-  const [company, setCompany] = useState<Company | null>(null);
-  const [categories, setCategories] = useState<QuestionCategory[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(true);
-
   const [isQuestionsError, setIsQuestionsError] = useState(false);
 
-  // Fetch company data and categories (simplified)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Use Zustand store for company data
+  const { company, categories, loading, fetchCompanyData } = useCompanyStore();
+
+  // Fetch company data using Zustand store
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const companyResponse = await axios.get(
-          `/api/companies/names/${encodeURIComponent(companyName)}`
-        );
-        setCompany(companyResponse.data.company);
-
-        const categoriesResponse = await axios.get(
-          `/api/question-categories?formId=${companyResponse.data.company.formId}&limit=100&sortBy=order&sortOrder=asc`
-        );
-        setCategories(categoriesResponse.data.data.questionCategories || []);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [companyName]);
+    fetchCompanyData(companyName);
+  }, [companyName, fetchCompanyData]);
 
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  // Check if a question should be shown based on conditionals
-  const shouldShowQuestion = (question: Question) => {
-    if (!question.conditionals || question.conditionals.length === 0) {
-      return true; // No conditionals, always show
-    }
-
-    // Check all conditionals - question is shown if any conditional is met
-    return question.conditionals.some((conditional) => {
-      const conditionFieldKey = `question_${conditional.conditionQuestionId}`;
-      const conditionValue = formData[conditionFieldKey];
-
-      // Handle different value types
-      if (Array.isArray(conditionValue)) {
-        return (
-          conditionValue.includes(conditional.conditionValue) ===
-          conditional.showQuestion
-        );
-      } else {
-        return (
-          (conditionValue === conditional.conditionValue) ===
-          conditional.showQuestion
-        );
-      }
-    });
   };
 
   // Function to update URL with current section
@@ -100,27 +48,48 @@ export default function CompanyAuditForm() {
   };
 
   // Create sections based on categories
-  const FORM_SECTIONS: FormSection[] =
-    categories.length > 0
-      ? categories
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((cat, index) => ({
-            id: index + 1,
-            title: cat.name,
-            categoryId: cat.id,
-          }))
-      : [];
+  const FORM_SECTIONS: FormSection[] = useMemo(
+    () =>
+      categories.length > 0
+        ? categories
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((cat, index) => ({
+              id: index + 1,
+              title: cat.name,
+              categoryId: cat.id,
+            }))
+        : [],
+    [categories]
+  );
 
-  // Fetch questions for current section based on URL parameter
+  // Initialize current section from URL parameter
+  useEffect(() => {
+    const sectionParam = searchParams.get("section");
+    if (sectionParam && FORM_SECTIONS.length > 0) {
+      const sectionNumber = parseInt(sectionParam, 10);
+      if (sectionNumber >= 1 && sectionNumber <= FORM_SECTIONS.length) {
+        setCurrentSection(sectionNumber);
+      }
+    }
+  }, [FORM_SECTIONS, searchParams]);
+
+  // Fetch questions for current section
   useEffect(() => {
     const fetchQuestions = async () => {
+      if (FORM_SECTIONS.length === 0) return;
+
       try {
         setIsQuestionsLoading(true);
         setIsQuestionsError(false);
-        const response = await axios.get("/api/questions", {
-          params: { categoryId: currentSection },
-        });
 
+        const currentSectionData = FORM_SECTIONS.find(
+          (s) => s.id === currentSection
+        );
+        if (!currentSectionData) return;
+
+        const response = await axios.get("/api/questions", {
+          params: { categoryId: currentSectionData.categoryId },
+        });
         const { questions } = response.data.data;
         setQuestions(questions);
       } catch (error) {
@@ -132,25 +101,45 @@ export default function CompanyAuditForm() {
     };
 
     fetchQuestions();
-  }, [searchParams]);
+  }, [currentSection, FORM_SECTIONS]);
 
-  const handleNext = () => {
+  const submitSurvey = async () => {
+    try {
+      setIsSubmitting(true);
+      const payloadData = {
+        companyName,
+        formData,
+      };
+      const response = await axios.post(
+        `/api/submissions/complete`,
+        payloadData
+      );
+
+      const { submission } = response.data.data;
+      router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("There was a problem");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentSection < FORM_SECTIONS.length) {
       const nextSection = currentSection + 1;
+      setCurrentSection(nextSection);
       updateUrlSection(nextSection);
-      window.location.reload(); // Simple approach for now
     } else {
-      // Form completed, store data and redirect to email page
-      sessionStorage.setItem("formData", JSON.stringify(formData));
-      router.push(`/${companyName}/email`);
+      await submitSurvey();
     }
   };
 
   const handleBack = () => {
     if (currentSection > 1) {
       const prevSection = currentSection - 1;
+      setCurrentSection(prevSection);
       updateUrlSection(prevSection);
-      window.location.reload(); // Simple approach for now
     }
   };
 
@@ -358,20 +347,6 @@ export default function CompanyAuditForm() {
 
   // Render current section with dynamic questions
   const renderCurrentSection = () => {
-    const currentSectionData = FORM_SECTIONS.find(
-      (s) => s.id === currentSection
-    );
-
-    if (!currentSectionData?.categoryId) {
-      return (
-        <EmptySection
-          title={currentSectionData?.title}
-          message="Content coming soon..."
-          icon="document"
-        />
-      );
-    }
-
     // Show error state if there's an error loading questions
     if (isQuestionsError) {
       return (
@@ -387,7 +362,6 @@ export default function CompanyAuditForm() {
         />
       );
     }
-
     return (
       <div className="space-y-8">
         {questions.map((question) => renderQuestion(question))}
@@ -425,6 +399,7 @@ export default function CompanyAuditForm() {
                 onNext={handleNext}
                 isFirstSection={currentSection === 1}
                 isLastSection={currentSection === FORM_SECTIONS.length}
+                isSubmitting={isSubmitting}
               />
             </>
           )}

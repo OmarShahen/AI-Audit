@@ -11,8 +11,9 @@ export function createReportEmailHTML(
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${subject}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     </head>
-    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <body style="margin: 0; padding: 0; font-family: 'Poppins', Arial, sans-serif; background-color: #f4f4f4;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             
             <!-- Header -->
@@ -56,7 +57,7 @@ export function createReportEmailHTML(
                         <div>
                             <h3 style="margin: 0; color: #333; font-size: 16px;">Attachment Included</h3>
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-                                <strong>${attachmentName.endsWith('.pdf') ? attachmentName : `${attachmentName}.pdf`}</strong>
+                                <strong>${attachmentName.endsWith('.docx') ? attachmentName : `${attachmentName}.docx`}</strong>
                             </p>
                         </div>
                     </div>
@@ -66,7 +67,7 @@ export function createReportEmailHTML(
                 <div style="margin: 30px 0;">
                     <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Next Steps</h3>
                     <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
-                        <li>Review the attached PDF report thoroughly</li>
+                        <li>Review the attached Word document report thoroughly</li>
                         <li>Share the report with relevant stakeholders</li>
                         <li>Address any findings or recommendations outlined in the report</li>
                         <li>Contact us if you have any questions or need clarification</li>
@@ -123,10 +124,10 @@ Additional Information:
 ${additionalMessage}
 
 ` : ''}
-Attachment: ${attachmentName.endsWith('.pdf') ? attachmentName : `${attachmentName}.pdf`}
+Attachment: ${attachmentName.endsWith('.docx') ? attachmentName : `${attachmentName}.docx`}
 
 Next Steps:
-• Review the attached PDF report thoroughly
+• Review the attached Word document report thoroughly
 • Share the report with relevant stakeholders  
 • Address any findings or recommendations outlined in the report
 • Contact us if you have any questions or need clarification

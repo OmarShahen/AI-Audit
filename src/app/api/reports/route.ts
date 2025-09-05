@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { reports } from "@/lib/db/schema";
+import { reports, submissions } from "@/lib/db/schema";
 import {
   createReportSchema,
   reportQuerySchema,
@@ -33,9 +33,7 @@ export async function GET(request: NextRequest) {
       whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
     const orderByClause =
-      sortOrder === "asc"
-        ? asc(reports.createdAt)
-        : desc(reports.createdAt);
+      sortOrder === "asc" ? asc(reports.createdAt) : desc(reports.createdAt);
 
     const [reportsList, totalCountResult] = await Promise.all([
       db
@@ -46,10 +44,7 @@ export async function GET(request: NextRequest) {
         .limit(limit)
         .offset(offset),
 
-      db
-        .select({ count: reports.id })
-        .from(reports)
-        .where(whereClause),
+      db.select({ count: reports.id }).from(reports).where(whereClause),
     ]);
 
     const totalCount = totalCountResult.length;
@@ -58,7 +53,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        reports: reportsList,
         pagination: {
           page,
           limit,
@@ -67,6 +61,7 @@ export async function GET(request: NextRequest) {
           hasNext: page < totalPages,
           hasPrev: page > 1,
         },
+        reports: reportsList,
       },
     });
   } catch (error) {
@@ -79,6 +74,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createReportSchema.parse(body);
+
+    const submission = await db.query.submissions.findFirst({
+      where: eq(submissions.id, validatedData.submissionId),
+    });
+
+    if (!submission) {
+      throw new Error("Submission not found");
+    }
 
     const [newReport] = await db
       .insert(reports)
