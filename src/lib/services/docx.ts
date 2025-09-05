@@ -466,7 +466,7 @@ function parseContentToDocx(
 
 function preprocessMarkdown(content: string): string {
   // Remove or convert problematic markdown
-  let cleaned = content
+  const cleaned = content
     // Remove === dividers
     .replace(/^={3,}.*$/gm, "")
     // Clean up bold markdown that might be broken
@@ -575,7 +575,7 @@ function parseBasicFormatting(text: string): TextRun[] {
       );
     } else if (part.trim()) {
       // Regular text - clean up any remaining asterisks and fix spacing around colons
-      let cleanText = part
+      const cleanText = part
         // Remove standalone asterisks that aren't part of markdown
         .replace(/\*+$/, "")
         .replace(/^\*+/, "")

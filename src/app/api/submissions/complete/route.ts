@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { answers, companies, forms, submissions } from "@/lib/db/schema";
+import { answers, companies, submissions } from "@/lib/db/schema";
 import { handleApiError } from "@/lib/errors/error-handler";
 import {
   completeSubmissionSchema,

@@ -139,7 +139,7 @@ export default function HomePage() {
                   Need Assessment Access?
                 </h4>
                 <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
-                  If your company isn't registered yet or you need help accessing your assessment, 
+                  If your company isn&apos;t registered yet or you need help accessing your assessment, 
                   our team is here to help you get started with your AI & Automation readiness journey.
                 </p>
                 
@@ -171,7 +171,7 @@ export default function HomePage() {
                   <h5 className="font-bold text-slate-800 mb-3">About Our Assessments</h5>
                   <div className="space-y-3 text-slate-600 text-sm">
                     <p>
-                      <strong>Customized Experience:</strong> Each assessment is built specifically for your company's 
+                      <strong>Customized Experience:</strong> Each assessment is built specifically for your company&apos;s 
                       profile, ensuring relevant questions and actionable insights.
                     </p>
                     <p>

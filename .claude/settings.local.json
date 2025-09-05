@@ -6,7 +6,9 @@
       "Bash(mkdir:*)",
       "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)",
       "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)",
-      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)"
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\lib\\validations/**)",
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\app\\api\\questions/**)",
+      "Read(/C:\\Users\\USER\\projects\\revi\\audit\\src\\app\\api\\questions/**)"
     ],
     "deny": [],
     "ask": []

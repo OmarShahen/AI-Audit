@@ -153,7 +153,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update the question with embedded options and conditionals
-    const updateData: any = {};
+    const updateData: Record<string, any> = {};
     if (validatedData.text !== undefined) updateData.text = validatedData.text;
     if (validatedData.type !== undefined) updateData.type = validatedData.type;
     if (validatedData.required !== undefined) updateData.required = validatedData.required;

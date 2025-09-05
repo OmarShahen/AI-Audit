@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import {
-  submissions,
-  reports,
-  answers,
-  questions,
-  companies,
-  industryEnum,
-} from "@/lib/db/schema";
+import { submissions, answers, questions, companies } from "@/lib/db/schema";
 import { generateReportSchema } from "@/lib/validations/report";
 import { handleApiError } from "@/lib/errors/error-handler";
 import { eq, sql } from "drizzle-orm";
@@ -41,9 +34,9 @@ export async function POST(request: NextRequest) {
       .leftJoin(questions, eq(questions.id, answers.questionId))
       .groupBy(questions.text);
 
-    const formattedAnswer = submissionAnswers.map((answer: any) => ({
-      ...answer,
-      answer: answer.answer.join(", "),
+    const formattedAnswer = submissionAnswers.map((item: any) => ({
+      question: item.question,
+      answer: item.answer.join(", "),
     }));
 
     const [company] = await db
@@ -61,7 +54,7 @@ export async function POST(request: NextRequest) {
       industry: company.industry,
       currentDate: new Date(),
     });
-    
+
     const INTERNAL_AGENCY_PROMPT = getInternalAgencyPrompt({
       companyName: company.name,
       industry: company.industry,
