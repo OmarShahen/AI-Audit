@@ -41,8 +41,9 @@ export interface QuestionOption {
 // Question conditional interface (embedded, no separate IDs)
 export interface QuestionConditional {
   conditionQuestionId: number;
-  conditionValue: string;
+  conditionValues: string[];
   showQuestion: boolean;
+  operator?: "AND" | "OR";
 }
 
 // Form section interface (used in sidebar)

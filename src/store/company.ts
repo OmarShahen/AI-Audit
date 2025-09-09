@@ -20,7 +20,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   // Initial state
   company: null,
   categories: [],
-  loading: false,
+  loading: true,
   error: null,
 
   // Actions

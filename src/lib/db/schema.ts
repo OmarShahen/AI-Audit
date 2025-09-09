@@ -97,8 +97,9 @@ export const questions = pgTable("questions", {
     .$type<
       {
         conditionQuestionId: number;
-        conditionValue: string;
+        conditionValues: string[];
         showQuestion: boolean;
+        operator?: "AND" | "OR";
       }[]
     >()
     .default([]),

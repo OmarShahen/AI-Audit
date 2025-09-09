@@ -18,8 +18,12 @@ export const questionConditionalSchema = z.object({
     .number()
     .int()
     .positive("Condition question ID must be a positive integer"),
-  conditionValue: z.string().min(1, "Condition value is required").trim(),
+  conditionValues: z
+    .array(z.string().min(1, "Condition value cannot be empty").trim())
+    .min(1, "At least one condition value is required")
+    .max(10, "Maximum 10 condition values allowed"),
   showQuestion: z.boolean().default(true),
+  operator: z.enum(["AND", "OR"]).default("OR"),
 });
 
 export const createQuestionSchema = z

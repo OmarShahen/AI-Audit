@@ -9,12 +9,12 @@ export const createQuestionConditionalSchema = z.object({
     .number()
     .int("Condition Question ID must be an integer")
     .positive("Condition Question ID must be a positive integer"),
-  conditionValue: z
-    .string()
-    .min(1, "Condition value is required")
-    .max(255, "Condition value must be less than 255 characters")
-    .trim(),
+  conditionValues: z
+    .array(z.string().min(1, "Condition value cannot be empty").max(255, "Condition value must be less than 255 characters").trim())
+    .min(1, "At least one condition value is required")
+    .max(10, "Maximum 10 condition values allowed"),
   showQuestion: z.boolean().default(true),
+  operator: z.enum(["AND", "OR"]).default("OR"),
 });
 
 export const updateQuestionConditionalSchema = z.object({
@@ -28,13 +28,13 @@ export const updateQuestionConditionalSchema = z.object({
     .int("Condition Question ID must be an integer")
     .positive("Condition Question ID must be a positive integer")
     .optional(),
-  conditionValue: z
-    .string()
-    .min(1, "Condition value is required")
-    .max(255, "Condition value must be less than 255 characters")
-    .trim()
+  conditionValues: z
+    .array(z.string().min(1, "Condition value cannot be empty").max(255, "Condition value must be less than 255 characters").trim())
+    .min(1, "At least one condition value is required")
+    .max(10, "Maximum 10 condition values allowed")
     .optional(),
   showQuestion: z.boolean().optional(),
+  operator: z.enum(["AND", "OR"]).optional(),
 });
 
 export const questionConditionalParamsSchema = z.object({
@@ -79,7 +79,7 @@ export const questionConditionalQuerySchema = z.object({
     .string()
     .transform((val) => val.toLowerCase() === "true")
     .optional(),
-  sortBy: z.enum(["conditionValue"]).default("conditionValue"),
+  sortBy: z.enum(["conditionValues", "operator"]).default("conditionValues"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
 

@@ -9,9 +9,9 @@ import FormLoader from "@/components/ui/FormLoader";
 import FormNavigation from "@/components/ui/FormNavigation";
 import FormHeader from "@/components/ui/FormHeader";
 import EmptySection from "@/components/ui/EmptySection";
+import ConditionalQuestionHint from "@/components/ui/ConditionalQuestionHint";
 import { useCompanyStore } from "@/store/company";
 import { Question, FormData, FormSection } from "@/types";
-import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function CompanyAuditForm() {
@@ -36,8 +36,100 @@ export default function CompanyAuditForm() {
     fetchCompanyData(companyName);
   }, [companyName, fetchCompanyData]);
 
+  // Restore form data from localStorage on component mount
+  useEffect(() => {
+    const storageKey = `formData_${companyName}`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setFormData(parsedData);
+      } catch (error) {
+        console.error("Error parsing saved form data:", error);
+        // Clear corrupted data
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [companyName]);
+
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Function to clear saved form data
+  const clearSavedData = () => {
+    const storageKey = `formData_${companyName}`;
+    localStorage.removeItem(storageKey);
+  };
+
+  // Check if a question is a parent question (has no conditionals or is referenced by other questions)
+  const isParentQuestion = (question: Question): boolean => {
+    return !question.conditionals || question.conditionals.length === 0;
+  };
+
+  // Function to check if a question should be shown based on conditionals
+  const shouldShowQuestion = (question: Question): boolean => {
+    // Always show parent questions (questions without conditionals)
+    if (isParentQuestion(question)) {
+      return true;
+    }
+
+    // For conditional questions, check if their conditions are met
+    return question.conditionals.every((conditional) => {
+      const conditionFieldKey = `question_${conditional.conditionQuestionId}`;
+      const currentAnswer = formData[conditionFieldKey];
+
+      // If no answer is provided yet, hide the conditional question
+      if (!currentAnswer) {
+        return false;
+      }
+
+      const answerArray = Array.isArray(currentAnswer)
+        ? currentAnswer
+        : [currentAnswer];
+      const conditionValues = conditional.conditionValues || [];
+
+      // Check if any of the current answers match the condition values
+      const hasMatch = conditionValues.some((conditionValue) =>
+        answerArray.includes(conditionValue)
+      );
+
+      if (conditional.operator === "AND") {
+        // For AND operator, all condition values must match
+        const allMatch = conditionValues.every((conditionValue) =>
+          answerArray.includes(conditionValue)
+        );
+        return conditional.showQuestion ? allMatch : !allMatch;
+      } else {
+        // For OR operator (default), at least one condition value must match
+        return conditional.showQuestion ? hasMatch : !hasMatch;
+      }
+    });
+  };
+
+  // Function to get hint text for hidden conditional questions
+  const getConditionalHint = (question: Question): string | null => {
+    if (isParentQuestion(question)) return null;
+
+    const conditional = question.conditionals[0]; // Get first conditional for hint
+    if (!conditional) return null;
+
+    const conditionQuestion = questions.find(
+      (q) => q.id === conditional.conditionQuestionId
+    );
+    if (!conditionQuestion) return null;
+
+    const triggerOptions = conditional.conditionValues
+      .map((value) => {
+        const option = conditionQuestion.options?.find(
+          (opt) => opt.value === value
+        );
+        return option?.text || value;
+      })
+      .join(" or ");
+
+    return `This question will appear if you select "${triggerOptions}" above.`;
   };
 
   // Function to update URL with current section
@@ -88,7 +180,10 @@ export default function CompanyAuditForm() {
         if (!currentSectionData) return;
 
         const response = await axios.get("/api/questions", {
-          params: { categoryId: currentSectionData.categoryId },
+          params: {
+            categoryId: currentSectionData.categoryId,
+            sortOrder: "asc",
+          },
         });
         const { questions } = response.data.data;
         setQuestions(questions);
@@ -110,10 +205,15 @@ export default function CompanyAuditForm() {
         companyName,
         formData,
       };
+
       const response = await axios.post(
         `/api/submissions/complete`,
         payloadData
       );
+
+      // Save form data to localStorage on successful submission
+      const storageKey = `formData_${companyName}`;
+      localStorage.setItem(storageKey, JSON.stringify(formData));
 
       const { submission } = response.data.data;
       router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
@@ -125,7 +225,46 @@ export default function CompanyAuditForm() {
     }
   };
 
+  // Function to validate current section
+  const validateCurrentSection = (): { isValid: boolean; missingFields: string[] } => {
+    const sortedQuestions = questions.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const visibleQuestions = sortedQuestions.filter(shouldShowQuestion);
+    const missingFields: string[] = [];
+
+    for (const question of visibleQuestions) {
+      if (question.required) {
+        const fieldKey = `question_${question.id}`;
+        const value = formData[fieldKey];
+        
+        if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
+          missingFields.push(question.text);
+        }
+      }
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields
+    };
+  };
+
   const handleNext = async () => {
+    // Validate current section before proceeding
+    const validation = validateCurrentSection();
+    
+    if (!validation.isValid) {
+      const count = validation.missingFields.length;
+      const message = count === 1 
+        ? "Please complete the required field to continue"
+        : `Please complete all ${count} required fields to continue`;
+      toast.error(message);
+      return;
+    }
+
+    // Save form data to localStorage before moving to next section or submitting
+    const storageKey = `formData_${companyName}`;
+    localStorage.setItem(storageKey, JSON.stringify(formData));
+
     if (currentSection < FORM_SECTIONS.length) {
       const nextSection = currentSection + 1;
       setCurrentSection(nextSection);
@@ -235,31 +374,6 @@ export default function CompanyAuditForm() {
           // Render as multiple choice with conditional info
           return (
             <div key={question.id} className="space-y-3">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-2">
-                  <svg
-                    className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div>
-                    <p className="text-blue-800 font-medium text-sm">
-                      Conditional Question
-                    </p>
-                    <p className="text-blue-700 text-xs mt-1">
-                      Your answer may reveal additional follow-up questions
-                    </p>
-                  </div>
-                </div>
-              </div>
               <RadioGroupField
                 label={question.text}
                 value={value as string}
@@ -277,31 +391,6 @@ export default function CompanyAuditForm() {
           // Render as text area with conditional info
           return (
             <div key={question.id} className="space-y-3">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-2">
-                  <svg
-                    className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div>
-                    <p className="text-blue-800 font-medium text-sm">
-                      Conditional Question
-                    </p>
-                    <p className="text-blue-700 text-xs mt-1">
-                      Your answer may reveal additional follow-up questions
-                    </p>
-                  </div>
-                </div>
-              </div>
               <TextAreaField
                 label={question.text}
                 value={value as string}
@@ -362,9 +451,31 @@ export default function CompanyAuditForm() {
         />
       );
     }
+    // Get all questions sorted by order
+    const sortedQuestions = questions.sort(
+      (a, b) => (a.order || 0) - (b.order || 0)
+    );
+
     return (
       <div className="space-y-8">
-        {questions.map((question) => renderQuestion(question))}
+        {sortedQuestions.map((question) => {
+          const isVisible = shouldShowQuestion(question);
+          const hint = getConditionalHint(question);
+
+          if (isVisible) {
+            return renderQuestion(question);
+          } else if (hint) {
+            // Show hint for hidden conditional questions
+            return (
+              <ConditionalQuestionHint
+                key={`hint-${question.id}`}
+                hint={hint}
+                isRequired={question.required}
+              />
+            );
+          }
+          return null;
+        })}
       </div>
     );
   };
