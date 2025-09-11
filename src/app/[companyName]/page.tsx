@@ -214,7 +214,8 @@ export default function CompanyAuditForm() {
 
       const { submission } = response.data.data;
       clearSavedData()
-      router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
+      //router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
+      router.push(`/thank-you/${companyName}`)
     } catch (error) {
       console.error(error);
       toast.error("There was a problem");

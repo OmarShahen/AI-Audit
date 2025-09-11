@@ -67,10 +67,12 @@ export async function POST(request: NextRequest) {
       generateReport({
         instructions: CLIENT_PROMPT,
         userAnswers: formattedAnswer,
+        model: validatedData.model,
       }),
       generateReport({
         instructions: INTERNAL_AGENCY_PROMPT,
         userAnswers: formattedAnswer,
+        model: validatedData.model,
       }),
     ]);
 

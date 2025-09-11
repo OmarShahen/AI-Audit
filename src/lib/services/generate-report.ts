@@ -8,11 +8,12 @@ interface UserAnswers {
 interface GenerateReport {
   instructions: string;
   userAnswers: UserAnswers[];
+  model?: string;
 }
 
 export const generateReport = async (reportData: GenerateReport) => {
   const response = await openai.responses.create({
-    model: "gpt-4o-mini",
+    model: reportData.model || "gpt-4o-mini",
     input: [
       {
         role: "system",
