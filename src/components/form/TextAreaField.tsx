@@ -7,6 +7,7 @@ interface TextAreaFieldProps {
   showCharacterCount?: boolean;
   rows?: number;
   required?: boolean;
+  questionNumber?: number;
 }
 
 export default function TextAreaField({
@@ -17,11 +18,17 @@ export default function TextAreaField({
   maxLength,
   showCharacterCount = false,
   rows = 4,
-  required = false
+  required = false,
+  questionNumber
 }: TextAreaFieldProps) {
   return (
     <div className="space-y-2">
       <label className="block text-slate-700 font-medium text-sm lg:text-base">
+        {questionNumber && (
+          <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-bold mr-3">
+            {questionNumber}
+          </span>
+        )}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>

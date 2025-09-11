@@ -11,6 +11,7 @@ interface RadioGroupFieldProps {
   name: string;
   required?: boolean;
   description?: string;
+  questionNumber?: number;
 }
 
 export default function RadioGroupField({
@@ -20,12 +21,18 @@ export default function RadioGroupField({
   options,
   name,
   required = false,
-  description
+  description,
+  questionNumber
 }: RadioGroupFieldProps) {
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-slate-700 font-medium text-sm lg:text-base mb-1">
+          {questionNumber && (
+            <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-bold mr-3">
+              {questionNumber}
+            </span>
+          )}
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>

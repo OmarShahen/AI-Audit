@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import TextAreaField from "@/components/form/TextAreaField";
 import RadioGroupField from "@/components/form/RadioGroupField";
+import CheckboxGroupField from "@/components/form/CheckboxGroupField";
 import FormLoader from "@/components/ui/FormLoader";
 import FormNavigation from "@/components/ui/FormNavigation";
 import FormHeader from "@/components/ui/FormHeader";
@@ -211,11 +212,8 @@ export default function CompanyAuditForm() {
         payloadData
       );
 
-      // Save form data to localStorage on successful submission
-      const storageKey = `formData_${companyName}`;
-      localStorage.setItem(storageKey, JSON.stringify(formData));
-
       const { submission } = response.data.data;
+      clearSavedData()
       router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
     } catch (error) {
       console.error(error);
@@ -283,7 +281,7 @@ export default function CompanyAuditForm() {
   };
 
   // Render a single question based on its type
-  const renderQuestion = (question: Question) => {
+  const renderQuestion = (question: Question, questionNumber?: number) => {
     const fieldKey = `question_${question.id}`;
     const value = formData[fieldKey] || "";
 
@@ -298,6 +296,7 @@ export default function CompanyAuditForm() {
               required={question.required}
               rows={4}
               placeholder="Enter your response here..."
+              questionNumber={questionNumber}
             />
           </div>
         );
@@ -317,52 +316,24 @@ export default function CompanyAuditForm() {
               }))}
               name={fieldKey}
               required={question.required}
+              questionNumber={questionNumber}
             />
           </div>
         );
 
       case "checkbox":
         const checkboxOptions = question.options || [];
-        const selectedValues = Array.isArray(value) ? value : [];
 
         return (
           <div key={question.id} className="space-y-3">
-            <label className="block text-slate-700 font-medium text-sm mb-3">
-              {question.text}
-              {question.required && (
-                <span className="text-red-500 ml-1">*</span>
-              )}
-            </label>
-            <div className="space-y-3">
-              {checkboxOptions.map((option, index) => (
-                <label
-                  key={`${question.id}-${option.value}-${index}`}
-                  className="flex items-start cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    value={option.value}
-                    checked={selectedValues.includes(option.value)}
-                    onChange={(e) => {
-                      const newValues = e.target.checked
-                        ? [...selectedValues, option.value]
-                        : selectedValues.filter((v) => v !== option.value);
-                      handleInputChange(fieldKey, newValues);
-                    }}
-                    className="mt-1 rounded border-slate-300 text-blue-600 focus:border-blue-500 focus:ring-blue-500 focus:ring-2"
-                  />
-                  <span className="ml-3 text-slate-700 leading-relaxed">
-                    {option.text}
-                  </span>
-                </label>
-              ))}
-            </div>
-            {selectedValues.length > 0 && (
-              <div className="text-xs text-slate-500 mt-2">
-                {selectedValues.length} item
-                {selectedValues.length !== 1 ? "s" : ""} selected
-              </div>
-            )}
+            <CheckboxGroupField
+              label={question.text}
+              value={Array.isArray(value) ? value : []}
+              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
+              options={checkboxOptions}
+              required={question.required}
+              questionNumber={questionNumber}
+            />
           </div>
         );
 
@@ -384,6 +355,7 @@ export default function CompanyAuditForm() {
                 }))}
                 name={fieldKey}
                 required={question.required}
+                questionNumber={questionNumber}
               />
             </div>
           );
@@ -398,6 +370,7 @@ export default function CompanyAuditForm() {
                 required={question.required}
                 rows={4}
                 placeholder="Please provide details..."
+                questionNumber={questionNumber}
               />
             </div>
           );
@@ -418,6 +391,7 @@ export default function CompanyAuditForm() {
               required={question.required}
               rows={3}
               placeholder="Enter your response..."
+              questionNumber={questionNumber}
             />
           </div>
         );
@@ -456,6 +430,8 @@ export default function CompanyAuditForm() {
       (a, b) => (a.order || 0) - (b.order || 0)
     );
 
+    let visibleQuestionNumber = 1;
+
     return (
       <div className="space-y-8">
         {sortedQuestions.map((question) => {
@@ -463,7 +439,9 @@ export default function CompanyAuditForm() {
           const hint = getConditionalHint(question);
 
           if (isVisible) {
-            return renderQuestion(question);
+            const questionElement = renderQuestion(question, visibleQuestionNumber);
+            visibleQuestionNumber++;
+            return questionElement;
           } else if (hint) {
             // Show hint for hidden conditional questions
             return (

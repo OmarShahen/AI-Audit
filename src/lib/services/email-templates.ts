@@ -139,3 +139,122 @@ Please do not reply to this email. For support, contact our team directly.
 © ${new Date().getFullYear()} Audit System. All rights reserved.
   `.trim();
 }
+
+export interface DocxEmailTemplateData {
+  companyName: string;
+  industry?: string;
+  submissionDate: string;
+  totalQuestions: number;
+  fileName: string;
+}
+
+export function createDocxEmailHTML(data: DocxEmailTemplateData): string {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Audit Responses Document - ${data.companyName}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Poppins', Arial, sans-serif; background-color: #f4f4f4;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #4c51bf 0%, #667eea 100%); color: white; padding: 30px 20px; text-align: center;">
+                <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Audit Responses Document</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">
+                    Generated on ${new Date().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                </p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #333; margin: 0 0 15px 0; font-size: 22px;">Hello,</h2>
+                    <p style="color: #555; line-height: 1.8; margin: 0; font-size: 16px;">
+                        Please find attached the audit responses document for <strong>${data.companyName}</strong>. 
+                        This document contains all questions and responses from the audit submission, organized by category.
+                    </p>
+                </div>
+
+                <!-- Company Details -->
+                <div style="background-color: #f7fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4c51bf;">
+                    <h3 style="color: #4a5568; margin: 0 0 15px 0; font-size: 18px;">Document Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #2d3748; font-weight: 500; width: 40%;">Company:</td>
+                            <td style="padding: 8px 0; color: #2d3748;">${data.companyName}</td>
+                        </tr>
+                        ${data.industry ? `
+                        <tr>
+                            <td style="padding: 8px 0; color: #2d3748; font-weight: 500;">Industry:</td>
+                            <td style="padding: 8px 0; color: #2d3748;">${data.industry}</td>
+                        </tr>
+                        ` : ''}
+                        <tr>
+                            <td style="padding: 8px 0; color: #2d3748; font-weight: 500;">Submission Date:</td>
+                            <td style="padding: 8px 0; color: #2d3748;">${data.submissionDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #2d3748; font-weight: 500;">Total Questions:</td>
+                            <td style="padding: 8px 0; color: #2d3748;">${data.totalQuestions}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Attachment Info -->
+                <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; border: 1px solid #d4edda;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="background-color: #28a745; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 18px;">
+                            📄
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; color: #333; font-size: 16px;">Word Document Attached</h3>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                                <strong>${data.fileName}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What's Included -->
+                <div style="margin: 30px 0;">
+                    <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">What's Included</h3>
+                    <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
+                        <li>All audit questions organized by category</li>
+                        <li>Complete responses provided during the audit</li>
+                        <li>Company information and submission details</li>
+                        <li>Professional formatting for easy review and sharing</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f8f9fa; padding: 25px 30px; border-top: 1px solid #e9ecef;">
+                <div style="text-align: center;">
+                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                        This email was automatically generated by the Revi Audit System
+                    </p>
+                    <p style="margin: 0; color: #999; font-size: 12px;">
+                        Please do not reply to this email. For support, contact our team directly.
+                    </p>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center;">
+                    <p style="margin: 0; color: #999; font-size: 11px;">
+                        © ${new Date().getFullYear()} Revi Audit System. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+}
