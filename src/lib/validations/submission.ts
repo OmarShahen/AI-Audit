@@ -100,7 +100,7 @@ export async function validateAndProcessFormData(
   formId: number
 ) {
   // Extract question IDs from form data
-  const questionIds = [];
+  const questionIds: number[] = [];
   for (const fieldKey of Object.keys(formData)) {
     const questionIdMatch = fieldKey.match(/^question_(\d+)$/);
     if (questionIdMatch) {
@@ -112,9 +112,8 @@ export async function validateAndProcessFormData(
     throw new Error("No valid questions found in form data");
   }
 
-  // Fetch and validate questions belong to the correct form
-  const relevantQuestions = await db.query.questions.findMany({
-    where: inArray(questions.id, questionIds),
+  // Fetch all questions for the form (including required ones not answered)
+  const allFormQuestions = await db.query.questions.findMany({
     with: {
       category: {
         columns: { formId: true },
@@ -122,15 +121,22 @@ export async function validateAndProcessFormData(
     },
   });
 
-  // Filter questions to ensure they belong to the correct form
-  const validQuestions = relevantQuestions.filter(
+  // Filter questions to get all questions that belong to the correct form
+  const allValidQuestions = allFormQuestions.filter(
     (q) => q.category.formId === formId
   );
+
+  // Get only the questions that were answered
+  const relevantQuestions = allValidQuestions.filter(
+    (q) => questionIds.includes(q.id)
+  );
+
+  const validQuestions = relevantQuestions;
   const validQuestionIds = new Set(validQuestions.map((q) => q.id));
 
   // Process and validate answers
-  const validatedAnswers = [];
-  const invalidQuestionIds = [];
+  const validatedAnswers: Array<{questionId: number, value: string}> = [];
+  const invalidQuestionIds: number[] = [];
 
   for (const [fieldKey, value] of Object.entries(formData)) {
     const questionIdMatch = fieldKey.match(/^question_(\d+)$/);
@@ -213,12 +219,28 @@ export async function validateAndProcessFormData(
 
   const questionsWithAnswers = Array.from(questionAnswersMap.values());
 
+  // Validate that all required questions have been answered
+  const requiredQuestions = allValidQuestions.filter((q) => q.required);
+  const answeredQuestionIds = new Set(validatedAnswers.map(answer => answer.questionId));
+  const missingRequiredQuestions = requiredQuestions.filter(
+    (q) => !answeredQuestionIds.has(q.id)
+  );
+
+  if (missingRequiredQuestions.length > 0) {
+    const missingQuestionTexts = missingRequiredQuestions.map(q => q.text);
+    throw new Error(
+      `The following required questions must be answered: ${missingQuestionTexts.join(', ')}`
+    );
+  }
+
   return {
     validatedAnswers,
     questionsWithAnswers,
     totalQuestionsSubmitted: questionIds.length,
     validQuestionsCount: validQuestions.length,
     invalidQuestionIds,
+    requiredQuestionsCount: requiredQuestions.length,
+    missingRequiredQuestions: [],
   };
 }
 
