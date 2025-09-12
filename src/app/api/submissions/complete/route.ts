@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { answers, companies, submissions } from "@/lib/db/schema";
+import { answers, companies, forms, submissions } from "@/lib/db/schema";
 import { handleApiError } from "@/lib/errors/error-handler";
 import {
   completeSubmissionSchema,
@@ -14,19 +14,28 @@ export async function POST(request: NextRequest) {
     // Validate input data using Zod schema
     const validatedData = completeSubmissionSchema.parse(body);
 
-    const company = await db.query.companies.findFirst({
-      where: eq(companies.name, validatedData.companyName),
-    });
+    const [company, form] = await Promise.all([
+      db.query.companies.findFirst({
+      where: eq(companies.id, validatedData.companyId),
+    }),
+    db.query.forms.findFirst({
+      where: eq(forms.id, validatedData.formId),
+    })
+    ])
 
     if (!company) {
       throw new Error("Company not found");
     }
 
+    if (!form) {
+      throw new Error("Form not found");
+    }
+
     // Start transaction to create submission and answers
     const result = await db.transaction(async (tx) => {
       const newSubmissionData = {
-        formId: company.formId,
-        companyId: company.id,
+        formId: validatedData.formId,
+        companyId: validatedData.companyId,
       };
       const [newSubmission] = await tx
         .insert(submissions)
@@ -36,7 +45,7 @@ export async function POST(request: NextRequest) {
       // Validate and process form data using validation function
       const { validatedAnswers } = await validateAndProcessFormData(
         validatedData.formData,
-        company.formId
+        validatedData.formId
       );
 
       if (!validatedAnswers.length) {

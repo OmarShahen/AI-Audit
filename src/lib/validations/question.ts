@@ -40,6 +40,7 @@ export const createQuestionSchema = z
       .int("Order must be an integer")
       .min(0, "Order must be a non-negative integer")
       .default(0),
+      placeholder: z.string().optional(),
     options: z.array(questionOptionSchema).optional(),
     conditionals: z.array(questionConditionalSchema).optional(),
   })
@@ -70,6 +71,7 @@ export const updateQuestionSchema = z.object({
     .int("Order must be an integer")
     .min(0, "Order must be a non-negative integer")
     .optional(),
+  placeholder: z.string().optional(),
   options: z.array(questionOptionSchema).optional(),
   conditionals: z.array(questionConditionalSchema).optional(),
 });

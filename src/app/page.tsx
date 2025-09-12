@@ -30,7 +30,7 @@ export default function HomePage() {
               Revi AI & Automation
             </h1>
             <h2 className="text-xl lg:text-2xl font-semibold text-slate-600 mb-6">
-              Business Readiness Assessment
+              AI & Automation Readiness Audit
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mx-auto"></div>
           </div>
@@ -38,12 +38,34 @@ export default function HomePage() {
           {/* Main Content */}
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200/60 px-6 lg:px-8 py-6 lg:py-8">
-              <h3 className="text-2xl lg:text-3xl font-bold text-slate-800 mb-3">
-                Company-Specific Assessments
-              </h3>
+              <p className="text-slate-600 text-lg leading-relaxed mb-6">
+                The AI & Automation Readiness Audit is designed to help business owners uncover where time, money, and opportunities are being lost to manual work — and how automation and AI can create measurable efficiency gains.
+              </p>
               <p className="text-slate-600 text-lg leading-relaxed">
-                Our AI & Automation readiness assessments are tailored specifically for registered companies. 
-                Each assessment is customized based on your industry, size, and business needs.
+                By completing this audit, you'll receive:
+              </p>
+              
+              <div className="mt-4 space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">A personalized report highlighting your biggest workflow challenges and areas of improvement</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">Insights into where automation can free up hours of staff time every week</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">A clear view of how ready your company is to adopt AI-powered tools and smarter processes</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">Recommendations aligned with your growth goals and industry context</p>
+                </div>
+              </div>
+
+              <p className="text-slate-600 text-lg leading-relaxed mt-6">
+                To get started, please provide your basic company information below. This ensures your report is tailored specifically to your business.
               </p>
             </div>
             

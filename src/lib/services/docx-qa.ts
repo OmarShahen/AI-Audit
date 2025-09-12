@@ -139,7 +139,7 @@ export function generateDocumentContent(data: SubmissionDocumentData): string {
       questionNumber++;
     }
     
-    content += `---\n\n`;
+    content += `\n\n`;
   }
 
   return content;

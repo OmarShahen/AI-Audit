@@ -26,6 +26,7 @@ export interface Question {
   type: "text" | "multiple_choice" | "checkbox" | "conditional";
   required: boolean;
   order: number;
+  placeholder: string;
   createdAt: string;
   options: QuestionOption[];
   conditionals: QuestionConditional[];

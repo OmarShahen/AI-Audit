@@ -38,6 +38,8 @@ export const companySizeEnum = pgEnum("company_size", [
   "enterprise",
 ]);
 
+export const companyTypeEnum = pgEnum("company_type", ["partner", "client"]);
+
 export const questionTypeEnum = pgEnum("question_type", [
   "text",
   "multiple_choice",
@@ -48,13 +50,18 @@ export const questionTypeEnum = pgEnum("question_type", [
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   formId: integer("form_id")
-    .references(() => forms.id)
-    .notNull(),
-  name: varchar("name", { length: 255 }).unique().notNull(),
+    .references(() => forms.id),
+  name: varchar("name", { length: 255 }).notNull(),
   industry: industryEnum("industry").notNull(),
   size: companySizeEnum("size").notNull(),
-  imageURL: varchar("image_url").notNull(),
+  website: varchar("website", { length: 255 }).notNull(),
+  contactFullName: varchar("contact_full_name", { length: 255 }),
+  contactJobTitle: varchar("contact_job_title", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }).notNull(),
+  imageURL: varchar("image_url"),
   providerEmail: varchar("provider_email"),
+  type: companyTypeEnum("type").notNull(),
+  partnerId: integer("partner_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -84,6 +91,7 @@ export const questions = pgTable("questions", {
   type: questionTypeEnum("type").notNull(),
   required: boolean("required").default(false).notNull(),
   order: integer("order").default(0),
+  placeholder: varchar('placeholder', { length: 255 }),
   options: json("options")
     .$type<
       {
@@ -136,8 +144,16 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const companiesRelations = relations(companies, ({ many }) => ({
+export const companiesRelations = relations(companies, ({ one, many }) => ({
   submissions: many(submissions),
+  partner: one(companies, {
+    fields: [companies.partnerId],
+    references: [companies.id],
+    relationName: "partnerClients",
+  }),
+  clients: many(companies, {
+    relationName: "partnerClients",
+  }),
 }));
 
 export const formsRelations = relations(forms, ({ many }) => ({

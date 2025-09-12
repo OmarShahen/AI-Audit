@@ -1,500 +1,329 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
-import TextAreaField from "@/components/form/TextAreaField";
-import RadioGroupField from "@/components/form/RadioGroupField";
-import CheckboxGroupField from "@/components/form/CheckboxGroupField";
-import FormLoader from "@/components/ui/FormLoader";
-import FormNavigation from "@/components/ui/FormNavigation";
-import FormHeader from "@/components/ui/FormHeader";
-import EmptySection from "@/components/ui/EmptySection";
-import ConditionalQuestionHint from "@/components/ui/ConditionalQuestionHint";
-import { useCompanyStore } from "@/store/company";
-import { Question, FormData, FormSection } from "@/types";
-import toast from "react-hot-toast";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useCompanyStore } from '@/store/company';
+import PageLoader from '@/components/ui/PageLoader';
+import axios from 'axios';
 
-export default function CompanyAuditForm() {
+interface CompanyFormData {
+  name: string;
+  industry: string;
+  size: string;
+  website: string;
+  contactFullName: string;
+  contactJobTitle: string;
+  contactEmail: string;
+  imageURL: string;
+}
+
+interface Partner {
+  id: number;
+  name: string;
+  imageURL: string;
+}
+
+export default function ClientRegistrationPage() {
+
+  const router = useRouter()
+
   const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const companyName = params.companyName as string;
+  const companyName = decodeURIComponent(params.companyName as string);
 
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentSection, setCurrentSection] = useState(1);
-  const [formData, setFormData] = useState<FormData>({});
-  const [isQuestionsLoading, setIsQuestionsLoading] = useState(true);
-  const [isQuestionsError, setIsQuestionsError] = useState(false);
-
+  const [formData, setFormData] = useState<CompanyFormData>({
+    name: '',
+    industry: '',
+    size: '',
+    website: '',
+    contactFullName: '',
+    contactJobTitle: '',
+    contactEmail: '',
+    imageURL: 'https://via.placeholder.com/150',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Use Zustand store for company data
   const { company, categories, loading, fetchCompanyData } = useCompanyStore();
 
   // Fetch company data using Zustand store
-  useEffect(() => {
-    fetchCompanyData(companyName);
-  }, [companyName, fetchCompanyData]);
+    useEffect(() => {
+      fetchCompanyData(companyName);
+    }, [companyName, fetchCompanyData]);
 
-  // Restore form data from localStorage on component mount
-  useEffect(() => {
-    const storageKey = `formData_${companyName}`;
-    const savedData = localStorage.getItem(storageKey);
-
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
-      } catch (error) {
-        console.error("Error parsing saved form data:", error);
-        // Clear corrupted data
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [companyName]);
-
-  const handleInputChange = (field: string, value: string | string[]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Function to clear saved form data
-  const clearSavedData = () => {
-    const storageKey = `formData_${companyName}`;
-    localStorage.removeItem(storageKey);
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Check if a question is a parent question (has no conditionals or is referenced by other questions)
-  const isParentQuestion = (question: Question): boolean => {
-    return !question.conditionals || question.conditionals.length === 0;
-  };
+    setIsSubmitting(true);
 
-  // Function to check if a question should be shown based on conditionals
-  const shouldShowQuestion = (question: Question): boolean => {
-    // Always show parent questions (questions without conditionals)
-    if (isParentQuestion(question)) {
-      return true;
-    }
-
-    // For conditional questions, check if their conditions are met
-    return question.conditionals.every((conditional) => {
-      const conditionFieldKey = `question_${conditional.conditionQuestionId}`;
-      const currentAnswer = formData[conditionFieldKey];
-
-      // If no answer is provided yet, hide the conditional question
-      if (!currentAnswer) {
-        return false;
-      }
-
-      const answerArray = Array.isArray(currentAnswer)
-        ? currentAnswer
-        : [currentAnswer];
-      const conditionValues = conditional.conditionValues || [];
-
-      // Check if any of the current answers match the condition values
-      const hasMatch = conditionValues.some((conditionValue) =>
-        answerArray.includes(conditionValue)
-      );
-
-      if (conditional.operator === "AND") {
-        // For AND operator, all condition values must match
-        const allMatch = conditionValues.every((conditionValue) =>
-          answerArray.includes(conditionValue)
-        );
-        return conditional.showQuestion ? allMatch : !allMatch;
-      } else {
-        // For OR operator (default), at least one condition value must match
-        return conditional.showQuestion ? hasMatch : !hasMatch;
-      }
-    });
-  };
-
-  // Function to get hint text for hidden conditional questions
-  const getConditionalHint = (question: Question): string | null => {
-    if (isParentQuestion(question)) return null;
-
-    const conditional = question.conditionals[0]; // Get first conditional for hint
-    if (!conditional) return null;
-
-    const conditionQuestion = questions.find(
-      (q) => q.id === conditional.conditionQuestionId
-    );
-    if (!conditionQuestion) return null;
-
-    const triggerOptions = conditional.conditionValues
-      .map((value) => {
-        const option = conditionQuestion.options?.find(
-          (opt) => opt.value === value
-        );
-        return option?.text || value;
-      })
-      .join(" or ");
-
-    return `This question will appear if you select "${triggerOptions}" above.`;
-  };
-
-  // Function to update URL with current section
-  const updateUrlSection = (section: number) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("section", section.toString());
-    window.history.replaceState({}, "", url.toString());
-  };
-
-  // Create sections based on categories
-  const FORM_SECTIONS: FormSection[] = useMemo(
-    () =>
-      categories.length > 0
-        ? categories
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map((cat, index) => ({
-              id: index + 1,
-              title: cat.name,
-              categoryId: cat.id,
-            }))
-        : [],
-    [categories]
-  );
-
-  // Initialize current section from URL parameter
-  useEffect(() => {
-    const sectionParam = searchParams.get("section");
-    if (sectionParam && FORM_SECTIONS.length > 0) {
-      const sectionNumber = parseInt(sectionParam, 10);
-      if (sectionNumber >= 1 && sectionNumber <= FORM_SECTIONS.length) {
-        setCurrentSection(sectionNumber);
-      }
-    }
-  }, [FORM_SECTIONS, searchParams]);
-
-  // Fetch questions for current section
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      if (FORM_SECTIONS.length === 0) return;
-
-      try {
-        setIsQuestionsLoading(true);
-        setIsQuestionsError(false);
-
-        const currentSectionData = FORM_SECTIONS.find(
-          (s) => s.id === currentSection
-        );
-        if (!currentSectionData) return;
-
-        const response = await axios.get("/api/questions", {
-          params: {
-            categoryId: currentSectionData.categoryId,
-            sortOrder: "asc",
-          },
-        });
-        const { questions } = response.data.data;
-        setQuestions(questions);
-      } catch (error) {
-        console.error(error);
-        setIsQuestionsError(true);
-      } finally {
-        setIsQuestionsLoading(false);
-      }
-    };
-
-    fetchQuestions();
-  }, [currentSection, FORM_SECTIONS]);
-
-  const submitSurvey = async () => {
     try {
-      setIsSubmitting(true);
-      const payloadData = {
-        companyName,
-        formData,
-      };
+      
+      const payload = {
+        ...formData,
+        type: 'client',
+        partnerId: company?.id
+      }
 
-      const response = await axios.post(
-        `/api/submissions/complete`,
-        payloadData
-      );
+      const { data } = await axios.post(`/api/companies`, payload)
+      const newCompany = data.data
 
-      const { submission } = response.data.data;
-      clearSavedData()
-      //router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
-      router.push(`/thank-you/${companyName}`)
-    } catch (error) {
-      console.error(error);
-      toast.error("There was a problem");
+      router.push(`/${companyName}/survey?clientId=${newCompany.id}`)
+    } catch (error: any) {
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Function to validate current section
-  const validateCurrentSection = (): { isValid: boolean; missingFields: string[] } => {
-    const sortedQuestions = questions.sort((a, b) => (a.order || 0) - (b.order || 0));
-    const visibleQuestions = sortedQuestions.filter(shouldShowQuestion);
-    const missingFields: string[] = [];
-
-    for (const question of visibleQuestions) {
-      if (question.required) {
-        const fieldKey = `question_${question.id}`;
-        const value = formData[fieldKey];
-        
-        if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
-          missingFields.push(question.text);
-        }
-      }
-    }
-
-    return {
-      isValid: missingFields.length === 0,
-      missingFields
-    };
-  };
-
-  const handleNext = async () => {
-    // Validate current section before proceeding
-    const validation = validateCurrentSection();
-    
-    if (!validation.isValid) {
-      const count = validation.missingFields.length;
-      const message = count === 1 
-        ? "Please complete the required field to continue"
-        : `Please complete all ${count} required fields to continue`;
-      toast.error(message);
-      return;
-    }
-
-    // Save form data to localStorage before moving to next section or submitting
-    const storageKey = `formData_${companyName}`;
-    localStorage.setItem(storageKey, JSON.stringify(formData));
-
-    if (currentSection < FORM_SECTIONS.length) {
-      const nextSection = currentSection + 1;
-      setCurrentSection(nextSection);
-      updateUrlSection(nextSection);
-    } else {
-      await submitSurvey();
-    }
-  };
-
-  const handleBack = () => {
-    if (currentSection > 1) {
-      const prevSection = currentSection - 1;
-      setCurrentSection(prevSection);
-      updateUrlSection(prevSection);
-    }
-  };
-
-  // Render a single question based on its type
-  const renderQuestion = (question: Question, questionNumber?: number) => {
-    const fieldKey = `question_${question.id}`;
-    const value = formData[fieldKey] || "";
-
-    switch (question.type) {
-      case "text":
-        return (
-          <div key={question.id} className="space-y-3">
-            <TextAreaField
-              label={question.text}
-              value={value as string}
-              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-              required={question.required}
-              rows={4}
-              placeholder="Enter your response here..."
-              questionNumber={questionNumber}
-            />
-          </div>
-        );
-
-      case "multiple_choice":
-        const options = question.options || [];
-
-        return (
-          <div key={question.id} className="space-y-3">
-            <RadioGroupField
-              label={question.text}
-              value={value as string}
-              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-              options={options.map((opt) => ({
-                value: opt.value,
-                label: opt.text,
-              }))}
-              name={fieldKey}
-              required={question.required}
-              questionNumber={questionNumber}
-            />
-          </div>
-        );
-
-      case "checkbox":
-        const checkboxOptions = question.options || [];
-
-        return (
-          <div key={question.id} className="space-y-3">
-            <CheckboxGroupField
-              label={question.text}
-              value={Array.isArray(value) ? value : []}
-              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-              options={checkboxOptions}
-              required={question.required}
-              questionNumber={questionNumber}
-            />
-          </div>
-        );
-
-      case "conditional":
-        // Check if this conditional question has options
-        const conditionalOptions = question.options || [];
-
-        if (conditionalOptions.length > 0) {
-          // Render as multiple choice with conditional info
-          return (
-            <div key={question.id} className="space-y-3">
-              <RadioGroupField
-                label={question.text}
-                value={value as string}
-                onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-                options={conditionalOptions.map((opt) => ({
-                  value: opt.value,
-                  label: opt.text,
-                }))}
-                name={fieldKey}
-                required={question.required}
-                questionNumber={questionNumber}
-              />
-            </div>
-          );
-        } else {
-          // Render as text area with conditional info
-          return (
-            <div key={question.id} className="space-y-3">
-              <TextAreaField
-                label={question.text}
-                value={value as string}
-                onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-                required={question.required}
-                rows={4}
-                placeholder="Please provide details..."
-                questionNumber={questionNumber}
-              />
-            </div>
-          );
-        }
-
-      default:
-        return (
-          <div key={question.id} className="space-y-3">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-yellow-800 text-sm">
-                ⚠️ Unknown question type: {question.type}
-              </p>
-            </div>
-            <TextAreaField
-              label={question.text}
-              value={value as string}
-              onChange={(newValue) => handleInputChange(fieldKey, newValue)}
-              required={question.required}
-              rows={3}
-              placeholder="Enter your response..."
-              questionNumber={questionNumber}
-            />
-          </div>
-        );
-    }
-  };
-
-  if (loading || !company) {
-    return (
-      <div className="p-4 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          <FormLoader questionCount={3} />
-        </div>
-      </div>
-    );
-  }
-
-  // Render current section with dynamic questions
-  const renderCurrentSection = () => {
-    // Show error state if there's an error loading questions
-    if (isQuestionsError) {
+  // Show loading state while fetching company data
+    if (loading) {
       return (
-        <EmptySection
-          title="Failed to Load Questions"
-          message={`Unable to load questions for this section.`}
-          icon="error"
-          variant="error"
-          actionButton={{
-            text: "Retry Loading",
-            onClick: () => {},
-          }}
+        <PageLoader
+          message="Loading company data"
+          subtitle="Please wait while we fetch your information..."
         />
       );
     }
-    // Get all questions sorted by order
-    const sortedQuestions = questions.sort(
-      (a, b) => (a.order || 0) - (b.order || 0)
-    );
+  
+    // Show error state
+    if (!company) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+          <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">
+              Company Not Found
+            </h1>
+            <p className="text-slate-600 mb-4">
+              {`${companyName} could not be found`}
+            </p>
+            <p className="text-slate-500 text-sm">
+              Please check the URL and try again.
+            </p>
+          </div>
+        </div>
+      );
+    }
 
-    let visibleQuestionNumber = 1;
-
-    return (
-      <div className="space-y-8">
-        {sortedQuestions.map((question) => {
-          const isVisible = shouldShowQuestion(question);
-          const hint = getConditionalHint(question);
-
-          if (isVisible) {
-            const questionElement = renderQuestion(question, visibleQuestionNumber);
-            visibleQuestionNumber++;
-            return questionElement;
-          } else if (hint) {
-            // Show hint for hidden conditional questions
-            return (
-              <ConditionalQuestionHint
-                key={`hint-${question.id}`}
-                hint={hint}
-                isRequired={question.required}
-              />
-            );
-          }
-          return null;
-        })}
-      </div>
-    );
-  };
 
   return (
-    <div className="p-4 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
-          {/* Form Header */}
-          <FormHeader
-            companyName={company.name}
-            companyLogo={company.imageURL}
-            currentSection={currentSection}
-            totalSections={FORM_SECTIONS.length}
-            currentSectionTitle={
-              FORM_SECTIONS.find((s) => s.id === currentSection)?.title || ""
-            }
-          />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container mx-auto px-4 py-8 lg:py-16">
+        <div className="max-w-3xl mx-auto">
+          
+          {/* Partner Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white border-2 border-slate-200 rounded-2xl mb-4 overflow-hidden">
+              {company?.imageURL ? (
+                <img 
+                  src={company.imageURL} 
+                  alt={`${company.name} logo`}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              )}
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold text-slate-800 mb-2">
+              AI & Automation Assessment
+            </h1>
+            <p className="text-lg text-slate-600">
+              Powered by <span className="font-semibold text-blue-600">{company?.name}</span>
+            </p>
+          </div>
 
-          {isQuestionsLoading ? (
-            <FormLoader questionCount={3} />
-          ) : (
-            <>
-              {/* Form Content */}
-              <div className="p-4 lg:p-8">{renderCurrentSection()}</div>
+          {/* Registration Form */}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200/60 px-6 lg:px-8 py-6">
+              <p className="text-slate-600 text-lg leading-relaxed mb-6">
+                The AI & Automation Readiness Audit is designed to help business owners uncover where time, money, and opportunities are being lost to manual work — and how automation and AI can create measurable efficiency gains.
+              </p>
+              <p className="text-slate-600 text-lg leading-relaxed">
+                By completing this audit, you'll receive:
+              </p>
+              
+              <div className="mt-4 space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">A personalized report highlighting your biggest workflow challenges and areas of improvement</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">Insights into where automation can free up hours of staff time every week</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">A clear view of how ready your company is to adopt AI-powered tools and smarter processes</p>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
+                  <p className="text-slate-600">Recommendations aligned with your growth goals and industry context</p>
+                </div>
+              </div>
 
-              {/* Navigation */}
-              <FormNavigation
-                currentSection={currentSection}
-                totalSections={FORM_SECTIONS.length}
-                onBack={handleBack}
-                onNext={handleNext}
-                isFirstSection={currentSection === 1}
-                isLastSection={currentSection === FORM_SECTIONS.length}
-                isSubmitting={isSubmitting}
-              />
-            </>
-          )}
+              <p className="text-slate-600 text-lg leading-relaxed mt-6">
+                To get started, please provide your basic company information below. This ensures your report is tailored specifically to your business.
+              </p>
+            </div>
+
+            <div className="p-6 lg:p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                
+                {/* Company Name */}
+                <div>
+                  <label htmlFor="name" className="block text-slate-700 font-medium mb-2">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter your company name"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 !text-black"
+                    required
+                  />
+                </div>
+
+                {/* Contact Information */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="contactFullName" className="block text-slate-700 font-medium mb-2">
+                      Your Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="contactFullName"
+                      name="contactFullName"
+                      value={formData.contactFullName}
+                      onChange={handleInputChange}
+                      placeholder="Your full name"
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 text-black"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contactJobTitle" className="block text-slate-700 font-medium mb-2">
+                      Job Title / Role
+                    </label>
+                    <input
+                      type="text"
+                      id="contactJobTitle"
+                      name="contactJobTitle"
+                      value={formData.contactJobTitle}
+                      onChange={handleInputChange}
+                      placeholder="Your job title"
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 text-black"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="contactEmail" className="block text-slate-700 font-medium mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="contactEmail"
+                    name="contactEmail"
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    placeholder="your.email@company.com"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 text-black"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="website" className="block text-slate-700 font-medium mb-2">
+                    Company Website *
+                  </label>
+                  <input
+                    type="url"
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                    placeholder="https://www.yourcompany.com"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-slate-400 text-black"
+                    required
+                  />
+                </div>
+
+                {/* Industry & Size */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="industry" className="block text-slate-700 font-medium mb-2">
+                      Industry *
+                    </label>
+                    <select
+                      id="industry"
+                      name="industry"
+                      value={formData.industry}
+                      onChange={handleInputChange}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      required
+                    >
+                      <option value="" disabled className="text-slate-400">Select your industry</option>
+                      <option value="technology">Technology</option>
+                      <option value="healthcare">Healthcare</option>
+                      <option value="finance">Finance</option>
+                      <option value="education">Education</option>
+                      <option value="manufacturing">Manufacturing</option>
+                      <option value="retail">Retail</option>
+                      <option value="hospitality">Hospitality</option>
+                      <option value="construction">Construction</option>
+                      <option value="real_estate">Real Estate</option>
+                      <option value="transportation">Transportation</option>
+                      <option value="logistics">Logistics</option>
+                      <option value="agriculture">Agriculture</option>
+                      <option value="media">Media</option>
+                      <option value="professional_services">Professional Services</option>
+                      <option value="non_profit">Non Profit</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="size" className="block text-slate-700 font-medium mb-2">
+                      Company Size *
+                    </label>
+                    <select
+                      id="size"
+                      name="size"
+                      value={formData.size}
+                      onChange={handleInputChange}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      required
+                    >
+                      <option value="" disabled className="text-slate-400">Select company size</option>
+                      <option value="startup">Startup (1-10 employees)</option>
+                      <option value="small">Small (11-50 employees)</option>
+                      <option value="medium">Medium (51-200 employees)</option>
+                      <option value="large">Large (201-1000 employees)</option>
+                      <option value="enterprise">Enterprise (1000+ employees)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {isSubmitting ? 'Creating Account...' : 'Start Assessment'}
+                </button>
+              </form>
+            </div>
+          </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
   );
 }

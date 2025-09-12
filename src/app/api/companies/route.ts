@@ -82,23 +82,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createCompanySchema.parse(body);
 
-    const { name } = validatedData;
-
-    const [company, form] = await Promise.all([
-      db.query.companies.findFirst({
-        where: eq(companies.name, name),
-      }),
-      db.query.forms.findFirst({
+    if(validatedData.formId) {
+      const form = db.query.forms.findFirst({
         where: eq(forms.id, validatedData.formId),
-      }),
-    ]);
+      })
 
-    if (company) {
-      throw new Error("Company name already registered");
+      if (!form) {
+      throw new Error("Form not found");
+    }
     }
 
-    if (!form) {
-      throw new Error("Form not found");
+    if(validatedData.type == 'client' && !validatedData.partnerId) {
+      throw new Error('Partner ID is required')
+    }
+
+    if(validatedData.partnerId) {
+      const partner = await db.query.companies.findFirst({ where: eq(companies.id, validatedData.partnerId) })
+      if(!partner) {
+        throw new Error('Partner not found')
+      }
     }
 
     const [newCompany] = await db

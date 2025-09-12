@@ -71,7 +71,8 @@ export const submissionQuerySchema = z.object({
 
 // Enhanced schema for complete form submission
 export const completeSubmissionSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
+  companyId: z.number({ required_error: 'Company ID is required' }),
+  formId: z.number({ required_error: 'Form ID is required' }),
   formData: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
 });
 

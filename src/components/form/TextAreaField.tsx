@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react';
+
 interface TextAreaFieldProps {
   label: string;
   value: string;
@@ -21,6 +23,33 @@ export default function TextAreaField({
   required = false,
   questionNumber
 }: TextAreaFieldProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight to fit content
+      textarea.style.height = `${Math.max(textarea.scrollHeight, rows * 24)}px`;
+    }
+  };
+
+  // Adjust height when value changes
+  useEffect(() => {
+    adjustHeight();
+  }, [value]);
+
+  // Adjust height on initial render
+  useEffect(() => {
+    adjustHeight();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+    adjustHeight();
+  };
+
   return (
     <div className="space-y-2">
       <label className="block text-slate-700 font-medium text-sm lg:text-base">
@@ -33,12 +62,14 @@ export default function TextAreaField({
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <textarea
+        ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={handleChange}
         placeholder={placeholder}
         maxLength={maxLength}
         rows={rows}
-        className="w-full p-3 lg:p-4 border border-slate-300 rounded-xl resize-none text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:border-slate-400 bg-white text-sm lg:text-base"
+        className="w-full p-3 lg:p-4 border border-slate-300 rounded-xl resize-none text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:border-slate-400 bg-white text-sm lg:text-base overflow-hidden"
+        style={{ minHeight: `${rows * 24}px` }}
       />
       {showCharacterCount && maxLength && (
         <div className="text-right">
