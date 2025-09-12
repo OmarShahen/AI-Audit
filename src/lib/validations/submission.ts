@@ -227,9 +227,8 @@ export async function validateAndProcessFormData(
   );
 
   if (missingRequiredQuestions.length > 0) {
-    const missingQuestionTexts = missingRequiredQuestions.map(q => q.text);
     throw new Error(
-      `The following required questions must be answered: ${missingQuestionTexts.join(', ')}`
+      "Please fill in all required fields before submitting the form."
     );
   }
 

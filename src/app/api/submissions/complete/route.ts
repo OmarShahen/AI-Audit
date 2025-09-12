@@ -33,14 +33,6 @@ export async function POST(request: NextRequest) {
 
     // Start transaction to create submission and answers
     const result = await db.transaction(async (tx) => {
-      const newSubmissionData = {
-        formId: validatedData.formId,
-        companyId: validatedData.companyId,
-      };
-      const [newSubmission] = await tx
-        .insert(submissions)
-        .values(newSubmissionData)
-        .returning();
 
       // Validate and process form data using validation function
       const { validatedAnswers } = await validateAndProcessFormData(
@@ -51,6 +43,15 @@ export async function POST(request: NextRequest) {
       if (!validatedAnswers.length) {
         throw new Error("No valid question found");
       }
+
+      const newSubmissionData = {
+        formId: validatedData.formId,
+        companyId: validatedData.companyId,
+      };
+      const [newSubmission] = await tx
+        .insert(submissions)
+        .values(newSubmissionData)
+        .returning();
 
       const answersToInsert = validatedAnswers.map((answer) => ({
         submissionId: newSubmission.id,
@@ -79,7 +80,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error(error);
     return handleApiError(error);
   }
 }
