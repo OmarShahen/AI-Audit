@@ -8,9 +8,11 @@ import { generateReport } from "@/lib/services/generate-report";
 import { getClientReportPrompt } from "@/lib/prompts/client-report-prompt";
 import { getInternalAgencyPrompt } from "@/lib/prompts/internal-agency-prompt";
 import { sendReportEmail } from "@/lib/services/email-report";
+import { sendAgencyEmail } from "@/lib/services/email-agency";
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('in begining report')
     const body = await request.json();
 
     const validatedData = generateReportSchema.parse(body);
@@ -39,26 +41,32 @@ export async function POST(request: NextRequest) {
       answer: item.answer.join(", "),
     }));
 
-    const [company] = await db
+    const [client] = await db
       .select()
       .from(companies)
       .where(eq(companies.id, submission.companyId!))
       .limit(1);
 
-    if (!company) {
-      throw new Error("Company not found for this form submission");
+      if (!client) {
+      throw new Error("Client not found for this form submission");
     }
 
+      const [partner] = await db.select().from(companies).where(eq(companies.id, client.partnerId!)).limit(1)
+
+      if(!partner) {
+        throw new Error('Partner not found for this form submission')
+      }
+
     const CLIENT_PROMPT = getClientReportPrompt({
-      name: company.name,
-      industry: company.industry,
+      name: client.name,
+      industry: client.industry,
       currentDate: new Date(),
     });
 
     const INTERNAL_AGENCY_PROMPT = getInternalAgencyPrompt({
-      companyName: company.name,
-      industry: company.industry,
-      size: company.size,
+      companyName: client.name,
+      industry: client.industry,
+      size: client.size,
       currentDate: new Date(),
     });
 
@@ -76,55 +84,47 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Send emails in parallel
-    const agencyEmail = process.env.AGENCY_EMAIL!;
-    const emailPromises = [
-      // Send to user
+    // Send client and partner emails in parallel
+    const [clientEmailResult, partnerEmailResult] = await Promise.all([
+      // Send to client's report to the client
       sendReportEmail({
-        email: validatedData.email,
+        email: client.contactEmail,
         reportText: report,
-        subject: `${company.name} Technology & Workflow Opportunity Report`,
-        attachmentName: `${company.name}-audit-report`,
+        subject: `${client.name} Technology & Workflow Opportunity Report`,
+        attachmentName: `${client.name}-audit-report`,
         format: "markdown",
       }),
-      // Send internal agency report
+      // Send to client's report to the partner
       sendReportEmail({
-        email: agencyEmail,
-        reportText: internalReport,
-        subject: `Internal Agency Report - ${company.name} Audit Submission`,
-        attachmentName: `${company.name}-internal-agency-report`,
+        email: partner.contactEmail,
+        reportText: report,
+        subject: `${client.name} Technology & Workflow Opportunity Report`,
+        attachmentName: `${client.name}-audit-report`,
         format: "markdown",
       }),
-    ];
+    ]);
 
-    // Send to provider email if exists
-    if (company.providerEmail) {
-      emailPromises.push(
-        sendReportEmail({
-          email: company.providerEmail,
-          reportText: report,
-          subject: `${company.name} Technology & Workflow Opportunity Report`,
-          attachmentName: `${company.name}-audit-report`,
-          format: "markdown",
-        })
-      );
-    }
+    // Send agency email separately to avoid rate limiting
+    const agencyEmail = process.env.AGENCY_EMAIL!;
+    const agencyEmailResult = await sendAgencyEmail({
+      email: agencyEmail,
+      clientReport: report,
+      internalReport: internalReport,
+      submissionId: validatedData.submissionId,
+    });
 
-    const [emailResult, agencyEmailResult, providerEmailResult] =
-      await Promise.all(emailPromises);
-
-    if (!emailResult.success) {
+    if (!clientEmailResult.success) {
       throw new Error("There was a problem sending your email");
     }
 
+    console.log('at the  end of report')
     return NextResponse.json(
       {
         success: true,
         message: "Report generated and sent successfully!",
-        emailData: emailResult.data,
-        agencyReportMail: agencyEmailResult,
-        providerReportMail: providerEmailResult || null,
-        report,
+        clientEmail: clientEmailResult,
+        partnerEmail: partnerEmailResult,
+        agencyEmail: agencyEmailResult,
       },
       { status: 201 }
     );

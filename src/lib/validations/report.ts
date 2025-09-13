@@ -65,7 +65,6 @@ export const reportQuerySchema = z.object({
 // Schema for generating reports via OpenAI
 export const generateReportSchema = z.object({
   submissionId: z.number({ required_error: 'submission ID is required' }).positive("Submission ID must be a positive number"),
-  email: z.string({ required_error: 'email is required' }).email("Valid email is required"),
   model: z.string().optional().default("gpt-4o-mini"),
 });
 

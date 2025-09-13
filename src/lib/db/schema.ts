@@ -59,7 +59,6 @@ export const companies = pgTable("companies", {
   contactJobTitle: varchar("contact_job_title", { length: 255 }),
   contactEmail: varchar("contact_email", { length: 255 }).notNull(),
   imageURL: varchar("image_url"),
-  providerEmail: varchar("provider_email"),
   type: companyTypeEnum("type").notNull(),
   partnerId: integer("partner_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

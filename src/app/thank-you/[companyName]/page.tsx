@@ -5,9 +5,11 @@ import { useParams } from "next/navigation";
 import { useCompanyStore } from "@/store/company";
 import PageLoader from "@/components/ui/PageLoader";
 
+
 export default function ThankYouPage() {
   const params = useParams();
   const companyName = params.companyName as string;
+
   const [loading, setLoading] = useState(true);
 
   // Use Zustand store for company data

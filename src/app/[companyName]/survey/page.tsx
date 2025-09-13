@@ -199,6 +199,20 @@ export default function CompanyAuditForm() {
     fetchQuestions();
   }, [currentSection, FORM_SECTIONS]);
 
+  const sendReport = (submissionId: number) => {
+    const sendReportData = { submissionId }
+
+    fetch(`/api/reports/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sendReportData),
+      keepalive: true
+    }).catch(error => {
+      console.error(`report error: ${error}`)
+    })
+
+  }
+
   const submitSurvey = async () => {
     try {
       setIsSubmitting(true);
@@ -214,8 +228,8 @@ export default function CompanyAuditForm() {
       );
 
       const { submission } = response.data.data;
+      sendReport(submission.id)
       clearSavedData()
-      //router.push(`/send-report/${companyName}?submissionId=${submission.id}`);
       router.push(`/thank-you/${companyName}`)
     } catch (error: any) {
       console.error(error);

@@ -26,5 +26,7 @@ export const generateReport = async (reportData: GenerateReport) => {
     ],
   });
 
+  console.log({ input: response.usage?.input_tokens, output: response.usage?.output_tokens, total: response.usage?.total_tokens })
+
   return response.output_text;
 };
