@@ -45,9 +45,29 @@ export default function ClientRegistrationPage() {
   const { company, categories, loading, fetchCompanyData } = useCompanyStore();
 
   // Fetch company data using Zustand store
-    useEffect(() => {
-      fetchCompanyData(companyName);
-    }, [companyName, fetchCompanyData]);
+  useEffect(() => {
+    fetchCompanyData(companyName);
+  }, [companyName, fetchCompanyData]);
+
+  // Check for existing client registration and redirect if found
+  useEffect(() => {
+    const clientDataKey = `clientData_${companyName}`;
+    const savedClientData = localStorage.getItem(clientDataKey);
+    
+    if (savedClientData) {
+      try {
+        const parsedData = JSON.parse(savedClientData);
+        if (parsedData.clientId && parsedData.isRegistered) {
+          // Client is already registered, redirect to survey
+          router.push(`/${companyName}/survey?clientId=${parsedData.clientId}`);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing saved client data:', error);
+        localStorage.removeItem(clientDataKey);
+      }
+    }
+  }, [companyName, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -69,6 +89,15 @@ export default function ClientRegistrationPage() {
 
       const { data } = await axios.post(`/api/companies`, payload)
       const newCompany = data.data
+
+      // Save client registration data to localStorage
+      const clientDataKey = `clientData_${companyName}`;
+      const clientData = {
+        clientId: newCompany.id,
+        isRegistered: true,
+        registeredAt: new Date().toISOString(),
+      };
+      localStorage.setItem(clientDataKey, JSON.stringify(clientData));
 
       router.push(`/${companyName}/survey?clientId=${newCompany.id}`)
     } catch (error: any) {

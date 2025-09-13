@@ -64,6 +64,12 @@ export default function CompanyAuditForm() {
     localStorage.removeItem(storageKey);
   };
 
+  // Function to clear client registration data
+  const clearClientData = () => {
+    const clientDataKey = `clientData_${companyName}`;
+    localStorage.removeItem(clientDataKey);
+  };
+
   // Check if a question is a parent question (has no conditionals or is referenced by other questions)
   const isParentQuestion = (question: Question): boolean => {
     return !question.conditionals || question.conditionals.length === 0;
@@ -230,6 +236,7 @@ export default function CompanyAuditForm() {
       const { submission } = response.data.data;
       sendReport(submission.id)
       clearSavedData()
+      clearClientData()
       router.push(`/thank-you/${companyName}`)
     } catch (error: any) {
       console.error(error);
