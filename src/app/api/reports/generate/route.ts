@@ -106,6 +106,10 @@ export async function POST(request: NextRequest) {
 
     // Send agency email separately to avoid rate limiting
     const agencyEmail = process.env.AGENCY_EMAIL!;
+    
+    // Wait 2 seconds before sending agency email
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     const agencyEmailResult = await sendAgencyEmail({
       email: agencyEmail,
       clientReport: report,
