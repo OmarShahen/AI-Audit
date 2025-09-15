@@ -9,6 +9,11 @@ export interface SendReportEmailParams {
   subject: string;
   attachmentName: string;
   format?: 'markdown' | 'plain';
+  additionalAttachments?: {
+    filename: string;
+    content: Buffer;
+    contentType: string;
+  }[];
 }
 
 export interface EmailResult {
@@ -24,7 +29,7 @@ export interface EmailResult {
 
 export async function sendReportEmail(params: SendReportEmailParams): Promise<EmailResult> {
   try {
-    const { email, reportText, subject, attachmentName, format = 'markdown' } = params;
+    const { email, reportText, subject, attachmentName, format = 'markdown', additionalAttachments = [] } = params;
 
     // Generate Word document from report text
     const docxBuffer = await generateWordFromText(reportText, subject, format);
@@ -33,22 +38,26 @@ export async function sendReportEmail(params: SendReportEmailParams): Promise<Em
     const htmlContent = createReportEmailHTML(subject, email, attachmentName);
 
     // Ensure attachment has .docx extension
-    const finalAttachmentName = attachmentName.endsWith(".docx") 
-      ? attachmentName 
+    const finalAttachmentName = attachmentName.endsWith(".docx")
+      ? attachmentName
       : `${attachmentName}.docx`;
+
+    // Prepare all attachments
+    const allAttachments = [
+      {
+        filename: finalAttachmentName,
+        content: docxBuffer,
+        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      },
+      ...additionalAttachments,
+    ];
 
     // Send email with Word document attachment
     const emailResult = await sendEmail({
       to: email,
       subject: subject,
       html: htmlContent,
-      attachments: [
-        {
-          filename: finalAttachmentName,
-          content: docxBuffer,
-          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        },
-      ],
+      attachments: allAttachments,
     });
 
     if (!emailResult.success) {

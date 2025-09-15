@@ -55,9 +55,9 @@ export function createReportEmailHTML(
                             📎
                         </div>
                         <div>
-                            <h3 style="margin: 0; color: #333; font-size: 16px;">Attachment Included</h3>
+                            <h3 style="margin: 0; color: #333; font-size: 16px;">Attachments Included</h3>
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-                                <strong>${attachmentName.endsWith('.docx') ? attachmentName : `${attachmentName}.docx`}</strong>
+                                Documents are attached as Word files (.docx)
                             </p>
                         </div>
                     </div>
@@ -67,9 +67,9 @@ export function createReportEmailHTML(
                 <div style="margin: 30px 0;">
                     <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Next Steps</h3>
                     <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
-                        <li>Review the attached Word document report thoroughly</li>
-                        <li>Share the report with relevant stakeholders</li>
-                        <li>Address any findings or recommendations outlined in the report</li>
+                        <li>Review the attached documents thoroughly</li>
+                        <li>Share the reports with relevant stakeholders</li>
+                        <li>Address any findings or recommendations outlined in the reports</li>
                         <li>Contact us if you have any questions or need clarification</li>
                     </ul>
                 </div>
@@ -124,12 +124,12 @@ Additional Information:
 ${additionalMessage}
 
 ` : ''}
-Attachment: ${attachmentName.endsWith('.docx') ? attachmentName : `${attachmentName}.docx`}
+Attachments: Documents are attached as Word files (.docx)
 
 Next Steps:
-• Review the attached Word document report thoroughly
-• Share the report with relevant stakeholders  
-• Address any findings or recommendations outlined in the report
+• Review the attached documents thoroughly
+• Share the reports with relevant stakeholders
+• Address any findings or recommendations outlined in the reports
 • Contact us if you have any questions or need clarification
 
 ---

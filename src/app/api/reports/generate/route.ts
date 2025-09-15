@@ -9,6 +9,7 @@ import { getClientReportPrompt } from "@/lib/prompts/client-report-prompt";
 import { getInternalAgencyPrompt } from "@/lib/prompts/internal-agency-prompt";
 import { sendReportEmail } from "@/lib/services/email-report";
 import { sendAgencyEmail } from "@/lib/services/email-agency";
+import { generateQADocument } from "@/lib/services/docx-qa";
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,8 +71,8 @@ export async function POST(request: NextRequest) {
       currentDate: new Date(),
     });
 
-    // Generate both reports in parallel
-    const [report, internalReport] = await Promise.all([
+    // Generate both reports and QA document in parallel
+    const [report, internalReport, qaDocument] = await Promise.all([
       generateReport({
         instructions: CLIENT_PROMPT,
         userAnswers: formattedAnswer,
@@ -82,42 +83,39 @@ export async function POST(request: NextRequest) {
         userAnswers: formattedAnswer,
         model: validatedData.model,
       }),
+      generateQADocument(validatedData.submissionId),
     ]);
 
-    // Send client and partner emails in parallel
-    const [clientEmailResult, partnerEmailResult] = await Promise.all([
-      // Send to client's report to the client
-      sendReportEmail({
-        email: client.contactEmail,
-        reportText: report,
-        subject: `${client.name} Technology & Workflow Opportunity Report`,
-        attachmentName: `${client.name}-audit-report`,
-        format: "markdown",
-      }),
-      // Send to client's report to the partner
+    // Send partner and agency emails in parallel
+    const agencyEmail = process.env.AGENCY_EMAIL!;
+
+    const [partnerEmailResult, agencyEmailResult] = await Promise.all([
+      // Send to client's report to the partner with QA document
       sendReportEmail({
         email: partner.contactEmail,
         reportText: report,
         subject: `${client.name} Technology & Workflow Opportunity Report`,
         attachmentName: `${client.name}-audit-report`,
         format: "markdown",
+        additionalAttachments: [
+          {
+            filename: qaDocument.fileName,
+            content: qaDocument.docxBuffer,
+            contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          },
+        ],
+      }),
+      // Send agency email with pre-generated QA document
+      sendAgencyEmail({
+        email: agencyEmail,
+        clientReport: report,
+        internalReport: internalReport,
+        submissionId: validatedData.submissionId,
+        qaDocument: qaDocument,
       }),
     ]);
 
-    // Send agency email separately to avoid rate limiting
-    const agencyEmail = process.env.AGENCY_EMAIL!;
-    
-    // Wait 2 seconds before sending agency email
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const agencyEmailResult = await sendAgencyEmail({
-      email: agencyEmail,
-      clientReport: report,
-      internalReport: internalReport,
-      submissionId: validatedData.submissionId,
-    });
-
-    if (!clientEmailResult.success) {
+    if (!partnerEmailResult.success) {
       throw new Error("There was a problem sending your email");
     }
 
@@ -126,7 +124,6 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         message: "Report generated and sent successfully!",
-        clientEmail: clientEmailResult,
         partnerEmail: partnerEmailResult,
         agencyEmail: agencyEmailResult,
       },

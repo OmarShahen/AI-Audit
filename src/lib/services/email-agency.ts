@@ -7,6 +7,11 @@ export interface AgencyEmailData {
   clientReport: string;
   internalReport: string;
   submissionId: number;
+  qaDocument?: {
+    fileName: string;
+    docxBuffer: Buffer;
+    documentData: any;
+  };
 }
 
 export interface AgencyEmailResult {
@@ -17,29 +22,30 @@ export interface AgencyEmailResult {
 
 export async function sendAgencyEmail(data: AgencyEmailData): Promise<AgencyEmailResult> {
   try {
-    const { 
-      email, 
-      clientReport, 
-      internalReport, 
-      submissionId
+    const {
+      email,
+      clientReport,
+      internalReport,
+      submissionId,
+      qaDocument
     } = data;
 
-    // Generate QA document and Word documents from both reports in parallel
-    const [qaDocument, clientReportBuffer, internalReportBuffer] = await Promise.all([
-      generateQADocument(submissionId),
+    // Generate QA document if not provided, and Word documents from both reports in parallel
+    const [qaDoc, clientReportBuffer, internalReportBuffer] = await Promise.all([
+      qaDocument || generateQADocument(submissionId),
       generateWordFromText(
-        clientReport, 
-        `Client Report`, 
+        clientReport,
+        `Client Report`,
         'markdown'
       ),
       generateWordFromText(
-        internalReport, 
-        `Internal Agency Report`, 
+        internalReport,
+        `Internal Agency Report`,
         'markdown'
       ),
     ]);
 
-    const { company } = qaDocument.documentData;
+    const { company } = qaDoc.documentData;
 
     // Create professional email HTML content
     const htmlContent = createAgencyEmailHTML(company.name);
@@ -57,8 +63,8 @@ export async function sendAgencyEmail(data: AgencyEmailData): Promise<AgencyEmai
         contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       },
       {
-        filename: qaDocument.fileName,
-        content: qaDocument.docxBuffer,
+        filename: qaDoc.fileName,
+        content: qaDoc.docxBuffer,
         contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       },
     ];

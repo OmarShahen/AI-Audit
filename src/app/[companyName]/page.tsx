@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCompanyStore } from '@/store/company';
 import PageLoader from '@/components/ui/PageLoader';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface CompanyFormData {
   name: string;
@@ -74,6 +75,19 @@ export default function ClientRegistrationPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  function normalizeUrl(input: string) {
+  // Trim spaces
+  let url = input.trim();
+
+  // If it already starts with http:// or https://, return as is
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  // Otherwise, prepend https://
+  return "https://" + url;
+}
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -84,6 +98,7 @@ export default function ClientRegistrationPage() {
       const payload = {
         ...formData,
         type: 'client',
+        website: normalizeUrl(formData.website),
         partnerId: company?.id
       }
 
@@ -101,6 +116,8 @@ export default function ClientRegistrationPage() {
 
       router.push(`/${companyName}/survey?clientId=${newCompany.id}`)
     } catch (error: any) {
+      console.error(error)
+      toast.error(error?.response?.data?.error || 'There was a problem')
     } finally {
       setIsSubmitting(false);
     }
@@ -274,7 +291,7 @@ export default function ClientRegistrationPage() {
                     Company Website *
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     id="website"
                     name="website"
                     value={formData.website}
