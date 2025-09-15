@@ -13,7 +13,7 @@ interface GenerateReport {
 
 export const generateReport = async (reportData: GenerateReport) => {
   const response = await openai.responses.create({
-    model: reportData.model || "gpt-4o-mini",
+    model: reportData.model || "gpt-5",
     input: [
       {
         role: "system",
