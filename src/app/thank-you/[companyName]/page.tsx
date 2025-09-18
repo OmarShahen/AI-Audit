@@ -8,7 +8,7 @@ import PageLoader from "@/components/ui/PageLoader";
 
 export default function ThankYouPage() {
   const params = useParams();
-  const companyName = params.companyName as string;
+  const companyName = decodeURIComponent(params.companyName as string);
 
   const [loading, setLoading] = useState(true);
 

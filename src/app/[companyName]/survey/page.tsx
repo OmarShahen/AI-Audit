@@ -19,7 +19,7 @@ export default function CompanyAuditForm() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const companyName = params.companyName as string;
+  const companyName = decodeURIComponent(params.companyName as string);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentSection, setCurrentSection] = useState(1);
@@ -206,24 +206,23 @@ export default function CompanyAuditForm() {
   }, [currentSection, FORM_SECTIONS]);
 
   const sendReport = (submissionId: number) => {
-    const sendReportData = { submissionId }
+    const sendReportData = { submissionId };
 
     fetch(`/api/reports/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sendReportData),
-      keepalive: true
-    }).catch(error => {
-      console.error(`report error: ${error}`)
-    })
-
-  }
+      keepalive: true,
+    }).catch((error) => {
+      console.error(`report error: ${error}`);
+    });
+  };
 
   const submitSurvey = async () => {
     try {
       setIsSubmitting(true);
       const payloadData = {
-        companyId: Number.parseInt(searchParams.get('clientId') as string, 10),
+        companyId: Number.parseInt(searchParams.get("clientId") as string, 10),
         formId: company?.formId,
         formData,
       };
@@ -234,10 +233,10 @@ export default function CompanyAuditForm() {
       );
 
       const { submission } = response.data.data;
-      sendReport(submission.id)
-      clearSavedData()
-      clearClientData()
-      router.push(`/thank-you/${companyName}`)
+      sendReport(submission.id);
+      clearSavedData();
+      clearClientData();
+      router.push(`/thank-you/${encodeURIComponent(companyName)}`);
     } catch (error: any) {
       console.error(error);
       toast.error(error?.response?.data?.error || "There was a problem");
@@ -247,8 +246,13 @@ export default function CompanyAuditForm() {
   };
 
   // Function to validate current section
-  const validateCurrentSection = (): { isValid: boolean; missingFields: string[] } => {
-    const sortedQuestions = questions.sort((a, b) => (a.order || 0) - (b.order || 0));
+  const validateCurrentSection = (): {
+    isValid: boolean;
+    missingFields: string[];
+  } => {
+    const sortedQuestions = questions.sort(
+      (a, b) => (a.order || 0) - (b.order || 0)
+    );
     const visibleQuestions = sortedQuestions.filter(shouldShowQuestion);
     const missingFields: string[] = [];
 
@@ -256,8 +260,12 @@ export default function CompanyAuditForm() {
       if (question.required) {
         const fieldKey = `question_${question.id}`;
         const value = formData[fieldKey];
-        
-        if (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === '')) {
+
+        if (
+          !value ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === "string" && value.trim() === "")
+        ) {
           missingFields.push(question.text);
         }
       }
@@ -265,19 +273,20 @@ export default function CompanyAuditForm() {
 
     return {
       isValid: missingFields.length === 0,
-      missingFields
+      missingFields,
     };
   };
 
   const handleNext = async () => {
     // Validate current section before proceeding
     const validation = validateCurrentSection();
-    
+
     if (!validation.isValid) {
       const count = validation.missingFields.length;
-      const message = count === 1 
-        ? "Please complete the required field to continue"
-        : `Please complete all ${count} required fields to continue`;
+      const message =
+        count === 1
+          ? "Please complete the required field to continue"
+          : `Please complete all ${count} required fields to continue`;
       toast.error(message);
       return;
     }
@@ -318,7 +327,9 @@ export default function CompanyAuditForm() {
               onChange={(newValue) => handleInputChange(fieldKey, newValue)}
               required={question.required}
               rows={4}
-              placeholder={question.placeholder || "Enter your response here..."}
+              placeholder={
+                question.placeholder || "Enter your response here..."
+              }
               questionNumber={questionNumber}
             />
           </div>
@@ -462,7 +473,10 @@ export default function CompanyAuditForm() {
           const hint = getConditionalHint(question);
 
           if (isVisible) {
-            const questionElement = renderQuestion(question, visibleQuestionNumber);
+            const questionElement = renderQuestion(
+              question,
+              visibleQuestionNumber
+            );
             visibleQuestionNumber++;
             return questionElement;
           } else if (hint) {

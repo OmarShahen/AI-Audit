@@ -11,7 +11,7 @@ import axios from "axios";
 export default function CompanyEmailCapture() {
   const params = useParams();
   const router = useRouter();
-  const companyName = params.companyName as string;
+  const companyName = decodeURIComponent(params.companyName as string);
 
   const searchParams = useSearchParams();
 

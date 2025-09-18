@@ -25,21 +25,20 @@ interface Partner {
 }
 
 export default function ClientRegistrationPage() {
-
-  const router = useRouter()
+  const router = useRouter();
 
   const params = useParams();
   const companyName = decodeURIComponent(params.companyName as string);
 
   const [formData, setFormData] = useState<CompanyFormData>({
-    name: '',
-    industry: '',
-    size: '',
-    website: '',
-    contactFullName: '',
-    contactJobTitle: '',
-    contactEmail: '',
-    imageURL: 'https://via.placeholder.com/150',
+    name: "",
+    industry: "",
+    size: "",
+    website: "",
+    contactFullName: "",
+    contactJobTitle: "",
+    contactEmail: "",
+    imageURL: "https://via.placeholder.com/150",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,39 +53,41 @@ export default function ClientRegistrationPage() {
   useEffect(() => {
     const clientDataKey = `clientData_${companyName}`;
     const savedClientData = localStorage.getItem(clientDataKey);
-    
+
     if (savedClientData) {
       try {
         const parsedData = JSON.parse(savedClientData);
         if (parsedData.clientId && parsedData.isRegistered) {
           // Client is already registered, redirect to survey
-          router.push(`/${companyName}/survey?clientId=${parsedData.clientId}`);
+          router.push(`/${encodeURIComponent(companyName)}/survey?clientId=${parsedData.clientId}`);
           return;
         }
       } catch (error) {
-        console.error('Error parsing saved client data:', error);
+        console.error("Error parsing saved client data:", error);
         localStorage.removeItem(clientDataKey);
       }
     }
   }, [companyName, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   function normalizeUrl(input: string) {
-  // Trim spaces
-  let url = input.trim();
+    // Trim spaces
+    let url = input.trim();
 
-  // If it already starts with http:// or https://, return as is
-  if (/^https?:\/\//i.test(url)) {
-    return url;
+    // If it already starts with http:// or https://, return as is
+    if (/^https?:\/\//i.test(url)) {
+      return url;
+    }
+
+    // Otherwise, prepend https://
+    return "https://" + url;
   }
-
-  // Otherwise, prepend https://
-  return "https://" + url;
-}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,16 +95,15 @@ export default function ClientRegistrationPage() {
     setIsSubmitting(true);
 
     try {
-      
       const payload = {
         ...formData,
-        type: 'client',
+        type: "client",
         website: normalizeUrl(formData.website),
-        partnerId: company?.id
-      }
+        partnerId: company?.id,
+      };
 
-      const { data } = await axios.post(`/api/companies`, payload)
-      const newCompany = data.data
+      const { data } = await axios.post(`/api/companies`, payload);
+      const newCompany = data.data;
 
       // Save client registration data to localStorage
       const clientDataKey = `clientData_${companyName}`;
@@ -114,63 +114,71 @@ export default function ClientRegistrationPage() {
       };
       localStorage.setItem(clientDataKey, JSON.stringify(clientData));
 
-      router.push(`/${companyName}/survey?clientId=${newCompany.id}`)
+      router.push(`/${encodeURIComponent(companyName)}/survey?clientId=${newCompany.id}`);
     } catch (error: any) {
-      console.error(error)
-      toast.error(error?.response?.data?.error || 'There was a problem')
+      console.error(error);
+      toast.error(error?.response?.data?.error || "There was a problem");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // Show loading state while fetching company data
-    if (loading) {
-      return (
-        <PageLoader
-          message="Loading company data"
-          subtitle="Please wait while we fetch your information..."
-        />
-      );
-    }
-  
-    // Show error state
-    if (!company) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-          <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">
-              Company Not Found
-            </h1>
-            <p className="text-slate-600 mb-4">
-              {`${companyName} could not be found`}
-            </p>
-            <p className="text-slate-500 text-sm">
-              Please check the URL and try again.
-            </p>
-          </div>
-        </div>
-      );
-    }
+  if (loading) {
+    return (
+      <PageLoader
+        message="Loading company data"
+        subtitle="Please wait while we fetch your information..."
+      />
+    );
+  }
 
+  // Show error state
+  if (!company) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">
+            Company Not Found
+          </h1>
+          <p className="text-slate-600 mb-4">
+            {`${companyName} could not be found`}
+          </p>
+          <p className="text-slate-500 text-sm">
+            Please check the URL and try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto px-4 py-8 lg:py-16">
         <div className="max-w-3xl mx-auto">
-          
           {/* Partner Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white border-2 border-slate-200 rounded-2xl mb-4 overflow-hidden">
               {company?.imageURL ? (
-                <img 
-                  src={company.imageURL} 
+                <img
+                  src={company.imageURL}
                   alt={`${company.name} logo`}
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <svg
+                  className="w-8 h-8 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
                 </svg>
               )}
             </div>
@@ -178,7 +186,10 @@ export default function ClientRegistrationPage() {
               AI & Automation Assessment
             </h1>
             <p className="text-lg text-slate-600">
-              Powered by <span className="font-semibold text-blue-600">{company?.name}</span>
+              Powered by{" "}
+              <span className="font-semibold text-blue-600">
+                {company?.name}
+              </span>
             </p>
           </div>
 
@@ -186,42 +197,61 @@ export default function ClientRegistrationPage() {
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200/60 px-6 lg:px-8 py-6">
               <p className="text-slate-600 text-lg leading-relaxed mb-6">
-                The AI & Automation Readiness Audit is designed to help business owners uncover where time, money, and opportunities are being lost to manual work — and how automation and AI can create measurable efficiency gains.
+                The AI & Automation Readiness Audit is designed to help business
+                owners uncover where time, money, and opportunities are being
+                lost to manual work — and how automation and AI can create
+                measurable efficiency gains.
               </p>
               <p className="text-slate-600 text-lg leading-relaxed">
                 By completing this audit, you'll receive:
               </p>
-              
+
               <div className="mt-4 space-y-3">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
-                  <p className="text-slate-600">A personalized report highlighting your biggest workflow challenges and areas of improvement</p>
+                  <p className="text-slate-600">
+                    A personalized report highlighting your biggest workflow
+                    challenges and areas of improvement
+                  </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
-                  <p className="text-slate-600">Insights into where automation can free up hours of staff time every week</p>
+                  <p className="text-slate-600">
+                    Insights into where automation can free up hours of staff
+                    time every week
+                  </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
-                  <p className="text-slate-600">A clear view of how ready your company is to adopt AI-powered tools and smarter processes</p>
+                  <p className="text-slate-600">
+                    A clear view of how ready your company is to adopt
+                    AI-powered tools and smarter processes
+                  </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-3"></div>
-                  <p className="text-slate-600">Recommendations aligned with your growth goals and industry context</p>
+                  <p className="text-slate-600">
+                    Recommendations aligned with your growth goals and industry
+                    context
+                  </p>
                 </div>
               </div>
 
               <p className="text-slate-600 text-lg leading-relaxed mt-6">
-                To get started, please provide your basic company information below. This ensures your report is tailored specifically to your business.
+                To get started, please provide your basic company information
+                below. This ensures your report is tailored specifically to your
+                business.
               </p>
             </div>
 
             <div className="p-6 lg:p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
-                
                 {/* Company Name */}
                 <div>
-                  <label htmlFor="name" className="block text-slate-700 font-medium mb-2">
+                  <label
+                    htmlFor="name"
+                    className="block text-slate-700 font-medium mb-2"
+                  >
                     Company Name *
                   </label>
                   <input
@@ -239,7 +269,10 @@ export default function ClientRegistrationPage() {
                 {/* Contact Information */}
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="contactFullName" className="block text-slate-700 font-medium mb-2">
+                    <label
+                      htmlFor="contactFullName"
+                      className="block text-slate-700 font-medium mb-2"
+                    >
                       Your Name *
                     </label>
                     <input
@@ -254,7 +287,10 @@ export default function ClientRegistrationPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="contactJobTitle" className="block text-slate-700 font-medium mb-2">
+                    <label
+                      htmlFor="contactJobTitle"
+                      className="block text-slate-700 font-medium mb-2"
+                    >
                       Job Title / Role
                     </label>
                     <input
@@ -271,7 +307,10 @@ export default function ClientRegistrationPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="contactEmail" className="block text-slate-700 font-medium mb-2">
+                  <label
+                    htmlFor="contactEmail"
+                    className="block text-slate-700 font-medium mb-2"
+                  >
                     Email Address *
                   </label>
                   <input
@@ -287,7 +326,10 @@ export default function ClientRegistrationPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="website" className="block text-slate-700 font-medium mb-2">
+                  <label
+                    htmlFor="website"
+                    className="block text-slate-700 font-medium mb-2"
+                  >
                     Company Website *
                   </label>
                   <input
@@ -305,7 +347,10 @@ export default function ClientRegistrationPage() {
                 {/* Industry & Size */}
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="industry" className="block text-slate-700 font-medium mb-2">
+                    <label
+                      htmlFor="industry"
+                      className="block text-slate-700 font-medium mb-2"
+                    >
                       Industry *
                     </label>
                     <select
@@ -316,7 +361,9 @@ export default function ClientRegistrationPage() {
                       className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       required
                     >
-                      <option value="" disabled className="text-slate-400">Select your industry</option>
+                      <option value="" disabled className="text-slate-400">
+                        Select your industry
+                      </option>
                       <option value="technology">Technology</option>
                       <option value="healthcare">Healthcare</option>
                       <option value="finance">Finance</option>
@@ -330,13 +377,18 @@ export default function ClientRegistrationPage() {
                       <option value="logistics">Logistics</option>
                       <option value="agriculture">Agriculture</option>
                       <option value="media">Media</option>
-                      <option value="professional_services">Professional Services</option>
+                      <option value="professional_services">
+                        Professional Services
+                      </option>
                       <option value="non_profit">Non Profit</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="size" className="block text-slate-700 font-medium mb-2">
+                    <label
+                      htmlFor="size"
+                      className="block text-slate-700 font-medium mb-2"
+                    >
                       Company Size *
                     </label>
                     <select
@@ -347,12 +399,16 @@ export default function ClientRegistrationPage() {
                       className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       required
                     >
-                      <option value="" disabled className="text-slate-400">Select company size</option>
+                      <option value="" disabled className="text-slate-400">
+                        Select company size
+                      </option>
                       <option value="startup">Startup (1-10 employees)</option>
                       <option value="small">Small (11-50 employees)</option>
                       <option value="medium">Medium (51-200 employees)</option>
                       <option value="large">Large (201-1000 employees)</option>
-                      <option value="enterprise">Enterprise (1000+ employees)</option>
+                      <option value="enterprise">
+                        Enterprise (1000+ employees)
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -363,13 +419,13 @@ export default function ClientRegistrationPage() {
                   disabled={isSubmitting}
                   className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
-                  {isSubmitting ? 'Creating Account...' : 'Start Assessment'}
+                  {isSubmitting ? "Creating Account..." : "Start Assessment"}
                 </button>
               </form>
             </div>
           </div>
-            </div>
-          </div>
         </div>
+      </div>
+    </div>
   );
 }
