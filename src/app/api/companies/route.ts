@@ -6,6 +6,7 @@ import {
   companyQuerySchema,
 } from "@/lib/validations/company";
 import { eq, ilike, and, asc, desc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { handleApiError } from "@/lib/errors/error-handler";
 
 export async function GET(request: NextRequest) {
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
     const validatedQuery = companyQuerySchema.parse(queryParams);
 
     const { page, limit, industry, size, search, sortOrder } = validatedQuery;
+    const type = searchParams.get("type");
 
     const offset = (page - 1) * limit;
 
@@ -27,6 +29,10 @@ export async function GET(request: NextRequest) {
 
     if (size) {
       whereConditions.push(eq(companies.size, size));
+    }
+
+    if (type) {
+      whereConditions.push(eq(companies.type, type as "partner" | "client"));
     }
 
     if (search) {
@@ -41,12 +47,15 @@ export async function GET(request: NextRequest) {
         ? asc(companies.createdAt)
         : desc(companies.createdAt);
 
+    const partner = alias(companies, "partner");
+
     const [companyList, totalCountResult] = await Promise.all([
       db
         .select()
         .from(companies)
         .where(whereClause)
         .leftJoin(forms, eq(companies.formId, forms.id))
+        .leftJoin(partner, eq(companies.partnerId, partner.id))
         .orderBy(orderByClause)
         .limit(limit)
         .offset(offset),
@@ -82,24 +91,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createCompanySchema.parse(body);
 
-    if(validatedData.formId) {
-      const form = db.query.forms.findFirst({
+    if (validatedData.formId) {
+      const form = await db.query.forms.findFirst({
         where: eq(forms.id, validatedData.formId),
-      })
+      });
 
       if (!form) {
-      throw new Error("Form not found");
-    }
-    }
-
-    if(validatedData.type == 'client' && !validatedData.partnerId) {
-      throw new Error('Partner ID is required')
+        throw new Error("Form not found");
+      }
     }
 
-    if(validatedData.partnerId) {
-      const partner = await db.query.companies.findFirst({ where: eq(companies.id, validatedData.partnerId) })
-      if(!partner) {
-        throw new Error('Partner not found')
+    if (validatedData.type == "client" && !validatedData.partnerId) {
+      throw new Error("Partner ID is required");
+    }
+
+    if (validatedData.partnerId) {
+      const partner = await db.query.companies.findFirst({
+        where: eq(companies.id, validatedData.partnerId),
+      });
+      if (!partner) {
+        throw new Error("Partner not found");
       }
     }
 

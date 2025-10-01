@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { forms } from "@/lib/db/schema";
+import { forms, questionCategories, companies } from "@/lib/db/schema";
 import { createFormSchema, formQuerySchema } from "@/lib/validations/form";
-import { eq, ilike, and, asc, desc } from "drizzle-orm";
+import { eq, ilike, and, asc, desc, sql } from "drizzle-orm";
 import { handleApiError } from "@/lib/errors/error-handler";
 
 export async function GET(request: NextRequest) {
@@ -30,9 +30,16 @@ export async function GET(request: NextRequest) {
 
     const [formsList, totalCountResult] = await Promise.all([
       db
-        .select()
+        .select({
+          form: forms,
+          categoriesCount: sql<number>`count(distinct ${questionCategories.id})`.as('categories_count'),
+          companiesCount: sql<number>`count(distinct ${companies.id})`.as('companies_count'),
+        })
         .from(forms)
+        .leftJoin(questionCategories, eq(forms.id, questionCategories.formId))
+        .leftJoin(companies, eq(forms.id, companies.formId))
         .where(whereClause)
+        .groupBy(forms.id)
         .orderBy(orderByClause)
         .limit(limit)
         .offset(offset),

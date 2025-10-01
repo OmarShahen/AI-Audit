@@ -39,8 +39,14 @@ export async function GET(request: NextRequest) {
 
     const [submissionsList, totalCountResult] = await Promise.all([
       db
-        .select()
+        .select({
+          submission: submissions,
+          company: companies,
+          form: forms,
+        })
         .from(submissions)
+        .leftJoin(companies, eq(submissions.companyId, companies.id))
+        .leftJoin(forms, eq(submissions.formId, forms.id))
         .where(whereClause)
         .orderBy(orderByClause)
         .limit(limit)

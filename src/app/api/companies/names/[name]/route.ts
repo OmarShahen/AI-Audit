@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { companies } from "@/lib/db/schema";
 import { handleApiError } from "@/lib/errors/error-handler";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -14,7 +14,7 @@ export async function GET(
     const [company] = await db
       .select()
       .from(companies)
-      .where(eq(companies.name, name))
+      .where(and(eq(companies.name, name), eq(companies.type, "partner")))
       .limit(1);
 
     if (!company) {
