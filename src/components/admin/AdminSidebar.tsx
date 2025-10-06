@@ -7,10 +7,11 @@ import {
   ChartNoAxesCombined,
   FileText,
   Handshake,
+  LogOut,
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function AdminSidebar({
   isShow,
@@ -20,6 +21,13 @@ export default function AdminSidebar({
   setIsShow: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    router.push('/admin-login');
+    router.refresh();
+  };
 
   const sidebarLinks = [
     {
@@ -149,6 +157,19 @@ export default function AdminSidebar({
             </div>
           );
         })}
+      </div>
+
+      {/* Logout Button */}
+      <div className="border-t border-gray-200 px-4 py-4 bg-white">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-3 rounded-lg font-medium text-sm transition-all duration-200 w-full text-gray-700 hover:bg-red-50 hover:text-red-600 group"
+        >
+          <div className="transition-colors text-gray-400 group-hover:text-red-600">
+            <LogOut size={20} />
+          </div>
+          <span className="flex-1 text-left">Logout</span>
+        </button>
       </div>
     </aside>
   );
